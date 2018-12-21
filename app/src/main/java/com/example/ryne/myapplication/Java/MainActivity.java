@@ -1,0 +1,345 @@
+package com.example.ryne.myapplication.Java;
+
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.example.ryne.myapplication.Java.entity.request.Product;
+import com.example.ryne.myapplication.Java.entity.response.ProductResponse;
+import com.example.ryne.myapplication.R;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.opencsv.CSVReader;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+
+public class MainActivity extends AppCompatActivity {
+    private Button btnFetch;
+    private Button btnCreate;
+    private Button btnReadCSV;
+    private Button btnDownload;
+    private TextView tvUpload;
+    private TextView tvFinish;
+
+    ApiInterface apiInterface;
+    public static String token = "ba822187dab4d93319ee388c1ec2a380b7f9c42e468edb7f";
+
+    private List<Product> lstProduct;
+    private int nextProduct;
+
+    public static String NAME = "Glass of Ryne ne";
+    public static String PRICE = "15.00";
+    public static String DESCRIPTION = "HI, LOOK GOOD TI";
+
+    // save fail product into sqlite and then export to recyclerview for result
+    // count the number that upload success and fail
+    // display the item number that uploaded on UI
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main_jav);
+        apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        btnFetch = findViewById(R.id.btnFetch);
+        btnCreate = findViewById(R.id.btnCreate);
+        btnReadCSV = findViewById(R.id.btnRead);
+        btnDownload = findViewById(R.id.btnDownload);
+        tvUpload = findViewById(R.id.tvUpload);
+        tvFinish = findViewById(R.id.tvFinish);
+        lstProduct = new ArrayList<>();
+
+
+        btnFetch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Call<List<ProductResponse>> call = apiInterface.getProdusts(token);
+                call.enqueue(new Callback<List<ProductResponse>>() {
+                    @Override
+                    public void onResponse(Call<List<ProductResponse>> call, retrofit2.Response<List<ProductResponse>> response) {
+                        Toast.makeText(MainActivity.this, "", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onFailure(Call<List<ProductResponse>> call, Throwable t) {
+
+                    }
+                });
+            }
+        });
+
+        btnCreate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                nextProduct = 0;
+                final Product product = lstProduct.get(nextProduct);
+                uploadProduct(product);
+            }
+        });
+
+        btnReadCSV.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                readProductData();
+                Toast.makeText(getApplicationContext(), "Click Read", Toast.LENGTH_LONG).show();
+                readProductDataLib();
+//                readProductData();
+            }
+        });
+
+        btnDownload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+    }
+
+    private void uploadProduct(final Product product) {
+        // set
+        tvUpload.setText("Uploading: " + product.getId());
+
+        JsonObject productJson = new JsonObject();
+        productJson.addProperty("name", product.getProductName());
+        productJson.addProperty("price", product.getProductPrice());
+        productJson.addProperty("description", product.getProductDescription1());
+        productJson.addProperty("shipping_category", 1);
+        JsonElement productElement = new Gson().fromJson(productJson, JsonElement.class);
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.add("product", productElement);
+        Call<ProductResponse> call = apiInterface.createProduct(token, jsonObject);
+        call.enqueue(new Callback<ProductResponse>() {
+            @Override
+            public void onResponse(Call<ProductResponse> call, retrofit2.Response<ProductResponse> response) {
+                if (response.isSuccessful()) {
+                    ProductResponse productResponse = response.body();
+                    uploadProductImageWithStaticURl(productResponse.getId(), product);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ProductResponse> call, Throwable t) {
+
+            }
+        });
+    }
+
+    private void uploadProductImageWithStaticURl(int productId, final Product product) {
+        Call<ResponseBody> call = apiInterface.createProductImageUrl(token, productId, getListImageURL(product));
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    tvFinish.setText("Created: [" + nextProduct + "]  " + product.getProductName());
+//                    Toast.makeText(getApplicationContext(), "Create product: " + product.getProductName(), Toast.LENGTH_LONG).show();
+                    if (nextProduct < lstProduct.size()) {
+                        // if list of product still have product, continue upload
+                        uploadProduct(lstProduct.get(nextProduct));
+                        nextProduct++;
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+            }
+        });
+    }
+
+    private void uploadNextProduct(int nextProduct) {
+        if (nextProduct < lstProduct.size()) {
+            // if list of product still have product, continue upload
+            uploadProduct(lstProduct.get(nextProduct));
+            nextProduct++;
+        } else {
+            Toast.makeText(getApplicationContext(), "No product left!", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private ArrayList<String> getListImageURL(Product product) {
+        ArrayList<String> staticUrls = new ArrayList<>();
+        if (product.getProductImage1() != null) {
+            staticUrls.add(product.getProductImage1());
+        }
+        if (product.getProductImage2() != null) {
+            staticUrls.add(product.getProductImage2());
+        }
+        if (product.getProductImage3() != null) {
+            staticUrls.add(product.getProductImage3());
+        }
+        if (product.getProductImage4() != null) {
+            staticUrls.add(product.getProductImage4());
+        }
+        return staticUrls;
+    }
+
+    private void readProductDataLib() {
+        // clear all product from list
+        lstProduct.clear();
+        // Read the raw csv file
+        InputStream is = getResources().openRawResource(R.raw.product_test);
+
+        // Reads text from character-input stream, buffering characters for efficient reading
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(is)
+        );
+
+        CSVReader csvReader = new CSVReader(reader);
+
+
+        String[] nextLine;
+        boolean firstLine = true;
+        int count = 0;
+        try {
+            while ((nextLine = csvReader.readNext()) != null) {
+                // nextLine[] is an array of values from the line
+                if (firstLine) {
+                    firstLine = false;
+                    continue;
+                }
+
+                Log.d("Line: ", " " + csvReader.getLinesRead());
+
+                count++;
+
+                Product product = new Product();
+                // Setters
+                product.setId(nextLine[0]);
+                product.setProductName(nextLine[1]);
+                product.setCategoryName(nextLine[2]);
+                product.setCategoryUrl(nextLine[3]);
+                product.setSubCategoryName(nextLine[4]);
+                product.setSubCategoryUrl(nextLine[5]);
+                product.setDateProductWasLaunched(nextLine[6]);
+                product.setCurrency(nextLine[7]);
+                product.setProductPrice(nextLine[8]);
+                product.setWeight(nextLine[9]);
+                product.setProductDescription1(nextLine[10]);
+                product.setProductDescription2(nextLine[11]);
+                product.setProductDescription3(nextLine[12]);
+                product.setProductUrl(nextLine[13]);
+                product.setWarehouse(nextLine[14]);
+                product.setOptions(nextLine[15]);
+                if (Utils.indexExists(nextLine, 16)) {
+                    product.setProductImage1(nextLine[16]);
+                }
+                if (Utils.indexExists(nextLine, 17)) {
+                    product.setProductImage2(nextLine[17]);
+                }
+                if (Utils.indexExists(nextLine, 18)) {
+                    product.setProductImage3(nextLine[18]);
+                }
+                if (Utils.indexExists(nextLine, 19)) {
+                    product.setProductImage4(nextLine[19]);
+                }
+                lstProduct.add(product);
+
+                // Log the object
+                Log.d("PRODUCT" + count, " " + product.toString());
+            }
+            Toast.makeText(getApplicationContext(), "Total: " + lstProduct.size(), Toast.LENGTH_LONG).show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void readProductData() {
+        // clear list product
+        lstProduct.clear();
+        // Read the raw csv file
+        InputStream is = getResources().openRawResource(R.raw.product);
+
+        // Reads text from character-input stream, buffering characters for efficient reading
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(is, Charset.forName("UTF-8"))
+        );
+
+
+        // Initialization
+        String line = "";
+
+        // Initialization
+        try {
+            // Step over headers
+            reader.readLine();
+
+            // If buffer is not empty
+            while ((line = reader.readLine()) != null) {
+                Log.d("MyActivity", "Line: " + line);
+                // use comma as separator columns of CSV
+//                String[] tokens = line.split(",");
+                String[] tokens = line.split(",(?=(?:[^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)", -1);
+                // Read the data
+                Product product = new Product();
+                // Setters
+                product.setId(tokens[0]);
+                product.setProductName(tokens[1]);
+                product.setCategoryName(tokens[2]);
+                product.setCategoryUrl(tokens[3]);
+                product.setSubCategoryName(tokens[4]);
+                product.setSubCategoryUrl(tokens[5]);
+                product.setDateProductWasLaunched(tokens[6]);
+                product.setCurrency(tokens[7]);
+                product.setProductPrice(tokens[8]);
+                product.setWeight(tokens[9]);
+                product.setProductDescription1(tokens[10]);
+                product.setProductDescription2(tokens[11]);
+                product.setProductDescription3(tokens[12]);
+                product.setProductUrl(tokens[13]);
+                product.setWarehouse(tokens[14]);
+                product.setOptions(tokens[15]);
+
+                if (Utils.indexExists(tokens, 16)) {
+                    product.setProductImage1(tokens[16]);
+                }
+                if (Utils.indexExists(tokens, 17)) {
+                    product.setProductImage2(tokens[17]);
+                }
+                if (Utils.indexExists(tokens, 18)) {
+                    product.setProductImage3(tokens[18]);
+                }
+                if (Utils.indexExists(tokens, 19)) {
+                    product.setProductImage4(tokens[19]);
+                }
+//                product.setProductImage1(tokens[16].substring(1, tokens[16].length() - 1));
+//                product.setProductImage2(tokens[17].substring(1, tokens[17].length() - 1));
+//                product.setProductImage3(tokens[18].substring(1, tokens[18].length() - 1));
+//                product.setProductImage4(tokens[19].substring(1, tokens[19].length() - 1));
+//                product.setProductImage5(tokens[20]);
+                // Adding object to a class
+                lstProduct.add(product);
+
+                // Log the object
+                Log.d("My Activity", "Just created: " + product);
+            }
+
+            Toast.makeText(getApplicationContext(), "Total: " + lstProduct.size(), Toast.LENGTH_LONG).show();
+
+        } catch (IOException e) {
+            // Logs error with priority level
+            Log.wtf("MyActivity", "Error reading data file on line" + line, e);
+
+            // Prints throwable details
+            e.printStackTrace();
+        }
+    }
+
+//    public Bitmap getBitmapFromURL(String src) {
+//
+//    }
+}
