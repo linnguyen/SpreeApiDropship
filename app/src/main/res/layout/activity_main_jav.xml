@@ -7,6 +7,14 @@
     android:orientation="vertical">
 
     <TextView
+        android:id="@+id/tvNotice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp"
+        android:textColor="@android:color/black"
+        android:textStyle="bold" />
+
+    <TextView
         android:id="@+id/tvUpload"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -48,13 +56,13 @@
         android:text="Read" />
 
     <Button
-        android:id="@+id/btnDownload"
+        android:id="@+id/btnReport"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/btnCreate"
         android:layout_centerInParent="true"
         android:layout_marginTop="10dp"
-        android:text="DownloadImage" />
+        android:text="See Report" />
 
 
 </LinearLayout>

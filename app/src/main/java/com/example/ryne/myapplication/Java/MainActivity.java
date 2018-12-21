@@ -1,15 +1,21 @@
 package com.example.ryne.myapplication.Java;
 
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.ryne.myapplication.Java.adapter.ReportAdapter;
 import com.example.ryne.myapplication.Java.entity.request.Product;
 import com.example.ryne.myapplication.Java.entity.response.ProductResponse;
+import com.example.ryne.myapplication.Java.localstorage.DAProduct;
 import com.example.ryne.myapplication.R;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -32,9 +38,10 @@ public class MainActivity extends AppCompatActivity {
     private Button btnFetch;
     private Button btnCreate;
     private Button btnReadCSV;
-    private Button btnDownload;
+    private Button btnReport;
     private TextView tvUpload;
     private TextView tvFinish;
+    private TextView tvNotice;
 
     ApiInterface apiInterface;
     public static String token = "ba822187dab4d93319ee388c1ec2a380b7f9c42e468edb7f";
@@ -45,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
     public static String NAME = "Glass of Ryne ne";
     public static String PRICE = "15.00";
     public static String DESCRIPTION = "HI, LOOK GOOD TI";
+
+    private DAProduct daProduct;
 
     // save fail product into sqlite and then export to recyclerview for result
     // count the number that upload success and fail
@@ -58,10 +67,12 @@ public class MainActivity extends AppCompatActivity {
         btnFetch = findViewById(R.id.btnFetch);
         btnCreate = findViewById(R.id.btnCreate);
         btnReadCSV = findViewById(R.id.btnRead);
-        btnDownload = findViewById(R.id.btnDownload);
+        btnReport = findViewById(R.id.btnReport);
         tvUpload = findViewById(R.id.tvUpload);
         tvFinish = findViewById(R.id.tvFinish);
+        tvNotice = findViewById(R.id.tvNotice);
         lstProduct = new ArrayList<>();
+        daProduct = new DAProduct();
 
 
         btnFetch.setOnClickListener(new View.OnClickListener() {
@@ -85,6 +96,14 @@ public class MainActivity extends AppCompatActivity {
         btnCreate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (lstProduct.isEmpty()) {
+                    Toast.makeText(getApplicationContext(), "Please read csv file before upload!!", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                // clear data report local
+                daProduct.deleteAll(getApplicationContext());
+                //
                 nextProduct = 0;
                 final Product product = lstProduct.get(nextProduct);
                 uploadProduct(product);
@@ -101,19 +120,23 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btnDownload.setOnClickListener(new View.OnClickListener() {
+        btnReport.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                showProductReportPopup(daProduct.getAll(getApplicationContext()));
             }
         });
     }
 
     private void uploadProduct(final Product product) {
-        // set
+        nextProduct++;
+        //
         tvUpload.setText("Uploading: " + product.getId());
+        //
+        tvNotice.setText("UPLOADING!!");
 
         JsonObject productJson = new JsonObject();
+        productJson.addProperty("id", product.getId());
         productJson.addProperty("name", product.getProductName());
         productJson.addProperty("price", product.getProductPrice());
         productJson.addProperty("description", product.getProductDescription1());
@@ -127,47 +150,53 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call<ProductResponse> call, retrofit2.Response<ProductResponse> response) {
                 if (response.isSuccessful()) {
                     ProductResponse productResponse = response.body();
-                    uploadProductImageWithStaticURl(productResponse.getId(), product);
+                    uploadProductImageWithStaticURl(productResponse, product);
                 }
             }
 
             @Override
             public void onFailure(Call<ProductResponse> call, Throwable t) {
-
+                // if fail, keep upload
+                ProductResponse productFail = new ProductResponse(product.getId(), product.getProductName(), "fail");
+                daProduct.add(productFail, getApplicationContext());
+                uploadNextProduct();
             }
         });
     }
 
-    private void uploadProductImageWithStaticURl(int productId, final Product product) {
-        Call<ResponseBody> call = apiInterface.createProductImageUrl(token, productId, getListImageURL(product));
+    private void uploadProductImageWithStaticURl(final ProductResponse productResponse, final Product product) {
+        Call<ResponseBody> call = apiInterface.createProductImageUrl(token, productResponse.getId(), getListImageURL(product));
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
                     tvFinish.setText("Created: [" + nextProduct + "]  " + product.getProductName());
+                    //save to db
+                    productResponse.setStatus("success");
+                    daProduct.add(productResponse, getApplicationContext());
 //                    Toast.makeText(getApplicationContext(), "Create product: " + product.getProductName(), Toast.LENGTH_LONG).show();
-                    if (nextProduct < lstProduct.size()) {
-                        // if list of product still have product, continue upload
-                        uploadProduct(lstProduct.get(nextProduct));
-                        nextProduct++;
-                    }
+                    uploadNextProduct();
                 }
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-
+                productResponse.setStatus("fail image");
+                daProduct.add(productResponse, getApplicationContext());
+                // if fail, keep upload
+                uploadNextProduct();
             }
         });
     }
 
-    private void uploadNextProduct(int nextProduct) {
+    private void uploadNextProduct() {
         if (nextProduct < lstProduct.size()) {
             // if list of product still have product, continue upload
             uploadProduct(lstProduct.get(nextProduct));
-            nextProduct++;
         } else {
-            Toast.makeText(getApplicationContext(), "No product left!", Toast.LENGTH_LONG).show();
+            tvNotice.setText("DONE!!");
+            List<ProductResponse> lstProduct = daProduct.getAll(getApplicationContext());
+            Toast.makeText(getApplicationContext(), "Uploaded: " + lstProduct.size() + " items", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -339,7 +368,24 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//    public Bitmap getBitmapFromURL(String src) {
-//
-//    }
+    public void showProductReportPopup(List<ProductResponse> lstProduct) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater layoutInflater = getLayoutInflater();
+
+        //this is custom dialog
+        //custom_popup_dialog contains textview only
+        View customView = layoutInflater.inflate(R.layout.custom_popup_dialog, null);
+        // reference recylerview
+        RecyclerView rcvReport = customView.findViewById(R.id.rcv_report);
+        rcvReport.setHasFixedSize(true);
+        rcvReport.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
+        ReportAdapter adapter = new ReportAdapter(lstProduct, getApplicationContext());
+        adapter.setData(lstProduct);
+        rcvReport.setAdapter(adapter);
+
+        builder.setView(customView);
+        builder.create();
+        builder.show();
+
+    }
 }

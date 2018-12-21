@@ -29,7 +29,7 @@ public interface ApiInterface {
 
     @FormUrlEncoded
     @POST("/api/v1/image_url")
-    Call<ResponseBody> createProductImageUrl(@Query("token") String token, @Query("id") int id, @Field("static_urls[]") ArrayList<String> static_urls);
+    Call<ResponseBody> createProductImageUrl(@Query("token") String token, @Query("id") String id, @Field("static_urls[]") ArrayList<String> static_urls);
 
 //    @Multipart
 //    @POST("v1/products/glass-of-ryne-ne/images")
