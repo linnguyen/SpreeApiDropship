@@ -6,13 +6,18 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
+import retrofit2.http.Header;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
+import retrofit2.http.Part;
 import retrofit2.http.Query;
 
 /**
@@ -31,13 +36,10 @@ public interface ApiInterface {
     @POST("/api/v1/image_url")
     Call<ResponseBody> createProductImageUrl(@Query("token") String token, @Query("id") String id, @Field("static_urls[]") ArrayList<String> static_urls);
 
-//    @Multipart
-//    @POST("v1/products/glass-of-ryne-ne/images")
-//    Call<ResponseBody> upload(
-//            @Part("description") RequestBody description,
-//            @Part MultipartBody.Part file
-//    );
-
 //    @POST("v1/products/glass-of-ryne-ne/images/")
 //    Call<ResponseBody> uploadImage(@Query("token") String token,@Body RequestBody image);
+
+    @Multipart
+    @POST("upload/")
+    Call<ResponseBody> uploadImage(@Header("Authorization") String authToken, @Part MultipartBody.Part image);
 }
