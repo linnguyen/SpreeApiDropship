@@ -16,6 +16,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.example.ryne.myapplication.Java.adapter.ReportAdapter;
@@ -43,6 +44,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+import info.guardianproject.netcipher.NetCipher;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -65,10 +67,11 @@ public class MainActivity extends AppCompatActivity {
 
     private DownloadTask myTask;
     ApiInterface apiInterface;
-    public static String token = "fa62f1446aad161c736cc4eeedef709f1c0e715612ae3139";
+    public static String token = "134399549e45ccd5d92d2fa9909d3a0b210980d911667a5a";
 
     private List<Product> lstProduct;
     private int nextProduct;
+    private ArrayList<String> lstUrlPerProduct;
 
     public static String NAME = "Glass of Ryne ne";
     public static String PRICE = "15.00";
@@ -153,26 +156,7 @@ public class MainActivity extends AppCompatActivity {
         btnUploadImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//               myTask = (DownloadTask) new DownloadTask().
-//                       execute(stringToURL("https://img.staticbg.com/images/oaupload/banggood/images/91/E9/e5bf0dd0-a577-411b-9b9b-c0bb60166151.jpg"));
 
-                File file = new File("jdjdj");
-                final RequestBody requestFile = RequestBody.create(MediaType.parse("image/jpeg"), file);
-                final MultipartBody.Part body = MultipartBody.Part.createFormData("image", file.getName(), requestFile);
-                Call<ResponseBody> call = apiInterface.uploadImage("ddjd", body);
-                call.enqueue(new Callback<ResponseBody>() {
-                    @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                        if (response.isSuccessful()) {
-                            Toast.makeText(getApplicationContext(), "Upload image success", Toast.LENGTH_LONG).show();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-
-                    }
-                });
             }
         });
     }
@@ -199,7 +183,12 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call<ProductResponse> call, retrofit2.Response<ProductResponse> response) {
                 if (response.isSuccessful()) {
                     ProductResponse productResponse = response.body();
-                    uploadProductImageWithStaticURl(productResponse, product);
+//                    uploadProductImageWithStaticURl(productResponse, product);
+                    // upload product based on lst URL
+                    lstUrlPerProduct = getListImageURL(product);
+                    if (!lstUrlPerProduct.isEmpty()) {
+                        downloadImageThenUpload(productResponse.getSlug(), 0);
+                    }
                 }
             }
 
@@ -211,6 +200,38 @@ public class MainActivity extends AppCompatActivity {
                 uploadNextProduct();
             }
         });
+    }
+
+    private void downloadImageThenUpload(String splug, int index) {
+        if (index < lstUrlPerProduct.size()) {
+            String url = lstUrlPerProduct.get(index);
+            myTask = (DownloadTask) new DownloadTask(splug, index).
+                    execute(stringToURL(url));
+        }
+
+//
+//        Call<ResponseBody> call = apiInterface.createProductImageUrl(token, productResponse.getId(), getListImageURL(product));
+//        call.enqueue(new Callback<ResponseBody>() {
+//            @Override
+//            public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
+//                if (response.isSuccessful()) {
+//                    tvFinish.setText("Created: [" + nextProduct + "]  " + product.getProductName());
+//                    //save to db
+//                    productResponse.setStatus("success");
+//                    daProduct.add(productResponse, getApplicationContext());
+////                    Toast.makeText(getApplicationContext(), "Create product: " + product.getProductName(), Toast.LENGTH_LONG).show();
+//                    uploadNextProduct();
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(Call<ResponseBody> call, Throwable t) {
+//                productResponse.setStatus("fail image");
+//                daProduct.add(productResponse, getApplicationContext());
+//                // if fail, keep upload
+//                uploadNextProduct();
+//            }
+//        });
     }
 
     private void uploadProductImageWithStaticURl(final ProductResponse productResponse, final Product product) {
@@ -438,11 +459,18 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private class DownloadTask extends AsyncTask<URL, Void, Bitmap> {
-        // Before the tasks execution
+    private class DownloadTask extends AsyncTask<URL, String, Bitmap> {
+
+        private String productId;
+        private int currentIndex;
+
+        public DownloadTask(String productId, int index) {
+            this.productId = productId;
+            this.currentIndex = index;
+        }
+
         protected void onPreExecute() {
-            // Display the progress dialog on async task start
-//        mProgressDialo g.show();
+            //mProgressDialo g.show();
         }
 
         // Do the task in background/non UI thread
@@ -452,7 +480,8 @@ public class MainActivity extends AppCompatActivity {
 
             try {
                 // Initialize a new http url connection
-                connection = (HttpURLConnection) url.openConnection();
+//                connection = (HttpURLConnection) url.openConnection();
+                connection = NetCipher.getHttpsURLConnection(url);
 
                 // Connect the http url connection
                 connection.connect();
@@ -460,32 +489,8 @@ public class MainActivity extends AppCompatActivity {
                 // Get the input stream from http url connection
                 InputStream inputStream = connection.getInputStream();
 
-                /*
-                    BufferedInputStream
-                        A BufferedInputStream adds functionality to another input stream-namely,
-                        the ability to buffer the input and to support the mark and reset methods.
-                */
-                /*
-                    BufferedInputStream(InputStream in)
-                        Creates a BufferedInputStream and saves its argument,
-                        the input stream in, for later use.
-                */
-                // Initialize a new BufferedInputStream from InputStream
                 BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
 
-                /*
-                    decodeStream
-                        Bitmap decodeStream (InputStream is)
-                            Decode an input stream into a bitmap. If the input stream is null, or
-                            cannot be used to decode a bitmap, the function returns null. The stream's
-                            position will be where ever it was after the encoded data was read.
-
-                        Parameters
-                            is InputStream : The input stream that holds the raw data
-                                              to be decoded into a bitmap.
-                        Returns
-                            Bitmap : The decoded bitmap, or null if the image data could not be decoded.
-                */
                 // Convert BufferedInputStream to Bitmap object
                 Bitmap bmp = BitmapFactory.decodeStream(bufferedInputStream);
 
@@ -504,19 +509,29 @@ public class MainActivity extends AppCompatActivity {
         // When all async task done
         protected void onPostExecute(Bitmap result) {
             // Hide the progress dialog
-//        mProgressDialog.dismiss();
 
             if (result != null) {
                 // Display the downloaded image into ImageView
-//            mImageView.setImageBitmap(result);
+                imvDownload.setImageBitmap(result);
 
                 // Save bitmap to internal storage
                 Uri imageInternalUri = saveImageToInternalStorage(result);
-                // Set the ImageView image from internal storage
-                imvDownload.setImageURI(imageInternalUri);
+
+                // upload the image to server Spree
+                uploadImageV1(imageInternalUri, productId);
+
+                // increase the
+                currentIndex++;
+                if (currentIndex < lstUrlPerProduct.size()) {
+                    // if still have image product, keep upload
+                    downloadImageThenUpload(productId, currentIndex++);
+                } else {// keep upload product
+                    uploadNextProduct();
+                }
+
             } else {
-                // Notify user that an error occurred while downloading image
-//            Snackbar.make(mCLayout, "Error", Snackbar.LENGTH_LONG).show();
+                // Notify user that an error occurred while downloading image\
+                Toast.makeText(getApplicationContext(), "Error occured while downloading image: " + productId, Toast.LENGTH_LONG).show();
             }
         }
 
@@ -573,28 +588,47 @@ public class MainActivity extends AppCompatActivity {
         return savedImageURI;
     }
 
-    private void uploadImage() {
+    private void uploadImage(Uri uriImagepath) {
+        File file = new File(uriImagepath.getPath());
+        final RequestBody requestFile = RequestBody.create(MediaType.parse("image/jpeg"), file);
+        final MultipartBody.Part body = MultipartBody.Part.createFormData("image", file.getName(), requestFile);
+        Call<ResponseBody> call = apiInterface.uploadImage(MainActivity.token, body);
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(getApplicationContext(), "Upload image success", Toast.LENGTH_LONG).show();
+                }
+            }
 
-    }
-
-    public void getFromSdcard()
-    {
-        File file= new File(android.os.Environment.getExternalStorageDirectory(),"MapleBear");
-
-        File [] listFile;
-
-        if (file.isDirectory())
-        {
-            listFile = file.listFiles();
-
-
-            for (int i = 0; i < listFile.length; i++)
-            {
-
-                i.add(listFile[i].getAbsolutePath());
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
 
             }
-        }
+        });
+    }
+
+    private void uploadImageV1(Uri imageUri, String productId) {
+        File file = new File(imageUri.getPath());
+        MultipartBody.Builder builder = new MultipartBody.Builder();
+        builder.setType(MultipartBody.FORM);
+        RequestBody fileBody = RequestBody.create(MediaType.parse("image"), file);
+        builder.addFormDataPart("image[attachment]", file.getName(),
+                fileBody);
+        Call<ResponseBody> call = apiInterface.uploadImagev1(productId, MainActivity.token, builder.build());
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(getApplicationContext(), "Upload image success", Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+            }
+        });
     }
 }
 

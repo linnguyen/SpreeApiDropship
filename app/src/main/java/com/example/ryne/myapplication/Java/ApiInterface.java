@@ -18,6 +18,7 @@ import retrofit2.http.Header;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
+import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 /**
@@ -36,10 +37,10 @@ public interface ApiInterface {
     @POST("/api/v1/image_url")
     Call<ResponseBody> createProductImageUrl(@Query("token") String token, @Query("id") String id, @Field("static_urls[]") ArrayList<String> static_urls);
 
-//    @POST("v1/products/glass-of-ryne-ne/images/")
-//    Call<ResponseBody> uploadImage(@Query("token") String token,@Body RequestBody image);
-
     @Multipart
-    @POST("upload/")
-    Call<ResponseBody> uploadImage(@Header("Authorization") String authToken, @Part MultipartBody.Part image);
+    @POST("/api/v1/products/bag-spree/image_upload")
+    Call<ResponseBody> uploadImage(@Query("token") String token, @Part MultipartBody.Part image);
+
+    @POST("v1/products/{product_id}/images")
+    Call<ResponseBody> uploadImagev1(@Path(value = "product_id", encoded = true) String productId, @Query("token") String token, @Body RequestBody image);
 }

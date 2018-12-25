@@ -11,6 +11,15 @@ public class ProductResponse {
 
     private String status;
 
+    private String slug;
+
+    public ProductResponse(String id, String name, String status, String slug) {
+        this.id = id;
+        this.name = name;
+        this.status = status;
+        this.slug = slug;
+    }
+
     public ProductResponse(String id, String name, String status) {
         this.id = id;
         this.name = name;
@@ -39,5 +48,13 @@ public class ProductResponse {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
 }
