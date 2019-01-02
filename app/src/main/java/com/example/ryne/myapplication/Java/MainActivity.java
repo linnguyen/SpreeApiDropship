@@ -67,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
 
     private DownloadTask myTask;
     ApiInterface apiInterface;
-    public static String token = "134399549e45ccd5d92d2fa9909d3a0b210980d911667a5a";
 
     private List<Product> lstProduct;
     private int nextProduct;
@@ -104,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
         btnFetch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Call<List<ProductResponse>> call = apiInterface.getProdusts(token);
+                Call<List<ProductResponse>> call = apiInterface.getProdusts(Constant.token);
                 call.enqueue(new Callback<List<ProductResponse>>() {
                     @Override
                     public void onResponse(Call<List<ProductResponse>> call, retrofit2.Response<List<ProductResponse>> response) {
@@ -177,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
         JsonElement productElement = new Gson().fromJson(productJson, JsonElement.class);
         JsonObject jsonObject = new JsonObject();
         jsonObject.add("product", productElement);
-        Call<ProductResponse> call = apiInterface.createProduct(token, jsonObject);
+        Call<ProductResponse> call = apiInterface.createProduct(Constant.token, jsonObject);
         call.enqueue(new Callback<ProductResponse>() {
             @Override
             public void onResponse(Call<ProductResponse> call, retrofit2.Response<ProductResponse> response) {
@@ -235,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void uploadProductImageWithStaticURl(final ProductResponse productResponse, final Product product) {
-        Call<ResponseBody> call = apiInterface.createProductImageUrl(token, productResponse.getId(), getListImageURL(product));
+        Call<ResponseBody> call = apiInterface.createProductImageUrl(Constant.token, productResponse.getId(), getListImageURL(product));
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
@@ -592,7 +591,7 @@ public class MainActivity extends AppCompatActivity {
         File file = new File(uriImagepath.getPath());
         final RequestBody requestFile = RequestBody.create(MediaType.parse("image/jpeg"), file);
         final MultipartBody.Part body = MultipartBody.Part.createFormData("image", file.getName(), requestFile);
-        Call<ResponseBody> call = apiInterface.uploadImage(MainActivity.token, body);
+        Call<ResponseBody> call = apiInterface.uploadImage(Constant.token, body);
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -615,7 +614,7 @@ public class MainActivity extends AppCompatActivity {
         RequestBody fileBody = RequestBody.create(MediaType.parse("image"), file);
         builder.addFormDataPart("image[attachment]", file.getName(),
                 fileBody);
-        Call<ResponseBody> call = apiInterface.uploadImagev1(productId, MainActivity.token, builder.build());
+        Call<ResponseBody> call = apiInterface.uploadImagev1(productId, Constant.token, builder.build());
         call.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
