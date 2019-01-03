@@ -3,6 +3,7 @@ package com.example.ryne.myapplication.Java;
 import android.content.ContextWrapper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -16,9 +17,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.SimpleTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.example.ryne.myapplication.Java.adapter.ReportAdapter;
 import com.example.ryne.myapplication.Java.entity.request.Product;
 import com.example.ryne.myapplication.Java.entity.response.ProductResponse;
@@ -28,6 +31,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.opencsv.CSVReader;
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -204,8 +209,9 @@ public class MainActivity extends AppCompatActivity {
     private void downloadImageThenUpload(String splug, int index) {
         if (index < lstUrlPerProduct.size()) {
             String url = lstUrlPerProduct.get(index);
-            myTask = (DownloadTask) new DownloadTask(splug, index).
-                    execute(stringToURL(url));
+//            myTask = (DownloadTask) new DownloadTask(splug, index).
+//                    execute(stringToURL(url));
+            loadImageFromUrlWithGlide(url, splug, index);
         }
 
 //
@@ -290,7 +296,7 @@ public class MainActivity extends AppCompatActivity {
         // clear all product from list
         lstProduct.clear();
         // Read the raw csv file
-        InputStream is = getResources().openRawResource(R.raw.product_test_1);
+        InputStream is = getResources().openRawResource(R.raw.product);
 
         // Reads text from character-input stream, buffering characters for efficient reading
         BufferedReader reader = new BufferedReader(
@@ -455,8 +461,27 @@ public class MainActivity extends AppCompatActivity {
         builder.setView(customView);
         builder.create();
         builder.show();
-
     }
+
+    private void loadImageFromUrlWithGlide(String url, final String productId, final int currentIndex) {
+//        Glide.with(getApplicationContext())
+//                .asBitmap()
+//                .load(url)
+//                .into(new SimpleTarget<Bitmap>() {
+//
+//                    @Override
+//                    public void onResourceReady(Bitmap resource, Transition<? super Bitmap> transition) {
+//                        imvDownload.setImageBitmap(resource);
+//
+//                        // Save bitmap to internal storage
+//                        Uri imageInternalUri = saveImageToInternalStorage(resource);
+//
+//                        // upload the image to server Spree
+//                        uploadImageV1(imageInternalUri, productId, currentIndex);
+//                    }
+//                });
+    }
+
 
     private class DownloadTask extends AsyncTask<URL, String, Bitmap> {
 
@@ -517,7 +542,7 @@ public class MainActivity extends AppCompatActivity {
                 Uri imageInternalUri = saveImageToInternalStorage(result);
 
                 // upload the image to server Spree
-                uploadImageV1(imageInternalUri, productId);
+                uploadImageV1(imageInternalUri, productId, currentIndex);
 
                 // increase the
                 currentIndex++;
@@ -607,7 +632,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void uploadImageV1(Uri imageUri, String productId) {
+    private void uploadImageV1(final Uri imageUri, final String productId, final int currentIndex) {
         File file = new File(imageUri.getPath());
         MultipartBody.Builder builder = new MultipartBody.Builder();
         builder.setType(MultipartBody.FORM);
@@ -620,6 +645,15 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(getApplicationContext(), "Upload image success", Toast.LENGTH_LONG).show();
+                    // increase
+                    int index = currentIndex;
+                    index++;
+                    if (index < lstUrlPerProduct.size()) {
+                        // if still have image product, keep upload
+                        downloadImageThenUpload(productId, index);
+                    } else {// keep upload product
+                        uploadNextProduct();
+                    }
                 }
             }
 
