@@ -3,10 +3,11 @@ package com.example.ryne.myapplication.Java;
 import android.content.ContextWrapper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -31,8 +32,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.opencsv.CSVReader;
-import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -68,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvFinish;
     private TextView tvNotice;
     private ImageView imvDownload;
+    private TextView tvNumber;
 
 
     private DownloadTask myTask;
@@ -101,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
         tvNotice = findViewById(R.id.tvNotice);
         btnUploadImage = findViewById(R.id.btnUploadImage);
         imvDownload = findViewById(R.id.imvDownload);
+        tvNumber = findViewById(R.id.tvNumber);
         lstProduct = new ArrayList<>();
         daProduct = new DAProduct();
 
@@ -166,6 +167,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void uploadProduct(final Product product) {
+        tvNumber.setText(nextProduct + "");
+
         nextProduct++;
         //
         tvUpload.setText("Uploading: " + product.getId());
@@ -206,37 +209,22 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void downloadImageThenUpload(String splug, int index) {
+    private void downloadImageThenUpload(final String splug, final int index) {
         if (index < lstUrlPerProduct.size()) {
             String url = lstUrlPerProduct.get(index);
-//            myTask = (DownloadTask) new DownloadTask(splug, index).
-//                    execute(stringToURL(url));
-            loadImageFromUrlWithGlide(url, splug, index);
+            Glide.with(getApplicationContext())
+                    .asBitmap()
+                    .load(url)
+                    .into(new SimpleTarget<Bitmap>() {
+                        @Override
+                        public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                            imvDownload.setImageBitmap(resource);
+                            Uri uri = saveImageToInternalStorage(resource);
+                            uploadImageV1(uri, splug, index);
+                        }
+                    });
         }
 
-//
-//        Call<ResponseBody> call = apiInterface.createProductImageUrl(token, productResponse.getId(), getListImageURL(product));
-//        call.enqueue(new Callback<ResponseBody>() {
-//            @Override
-//            public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
-//                if (response.isSuccessful()) {
-//                    tvFinish.setText("Created: [" + nextProduct + "]  " + product.getProductName());
-//                    //save to db
-//                    productResponse.setStatus("success");
-//                    daProduct.add(productResponse, getApplicationContext());
-////                    Toast.makeText(getApplicationContext(), "Create product: " + product.getProductName(), Toast.LENGTH_LONG).show();
-//                    uploadNextProduct();
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<ResponseBody> call, Throwable t) {
-//                productResponse.setStatus("fail image");
-//                daProduct.add(productResponse, getApplicationContext());
-//                // if fail, keep upload
-//                uploadNextProduct();
-//            }
-//        });
     }
 
     private void uploadProductImageWithStaticURl(final ProductResponse productResponse, final Product product) {

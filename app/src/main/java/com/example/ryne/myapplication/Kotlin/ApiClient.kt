@@ -1,7 +1,9 @@
 package com.example.ryne.myapplication.Kotlin
 
 import com.example.ryne.myapplication.Java.Constant
+import com.example.ryne.myapplication.Kotlin.response.ListProductResponse
 import com.example.ryne.myapplication.Kotlin.response.ProductResponse
+import com.google.gson.JsonObject
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -20,7 +22,11 @@ class ApiClient {
         apiInterface = retrofit.create(ApiInterface::class.java)
     }
 
-    fun getProducts(token: String): Call<List<ProductResponse>> {
+    fun getProducts(token: String): Call<ListProductResponse> {
         return apiInterface.getProducts(token)
+    }
+
+    fun createProduct(token: String, jsonObject: JsonObject): Call<ProductResponse> {
+        return apiInterface.createProduct(token, jsonObject)
     }
 }
