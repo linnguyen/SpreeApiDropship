@@ -1,5 +1,6 @@
 package com.example.ryne.myapplication.Java;
 
+import com.example.ryne.myapplication.Java.entity.response.ImageResponse;
 import com.example.ryne.myapplication.Java.entity.response.ProductResponse;
 import com.google.gson.JsonObject;
 
@@ -43,4 +44,7 @@ public interface ApiInterface {
 
     @POST("v1/products/{product_id}/images")
     Call<ResponseBody> uploadImagev1(@Path(value = "product_id", encoded = true) String productId, @Query("token") String token, @Body RequestBody image);
+
+    @POST("v1/products/{product_id}/image_upload")
+    Call<ImageResponse> uploadImagev2(@Path(value = "product_id", encoded = true) String productId, @Query("token") String token, @Body JsonObject jsonObject);
 }

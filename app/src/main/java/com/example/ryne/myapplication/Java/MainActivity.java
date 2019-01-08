@@ -25,6 +25,7 @@ import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.example.ryne.myapplication.Java.adapter.ReportAdapter;
 import com.example.ryne.myapplication.Java.entity.request.Product;
+import com.example.ryne.myapplication.Java.entity.response.ImageResponse;
 import com.example.ryne.myapplication.Java.entity.response.ProductResponse;
 import com.example.ryne.myapplication.Java.localstorage.DAProduct;
 import com.example.ryne.myapplication.R;
@@ -194,7 +195,8 @@ public class MainActivity extends AppCompatActivity {
                     // upload product based on lst URL
                     lstUrlPerProduct = getListImageURL(product);
                     if (!lstUrlPerProduct.isEmpty()) {
-                        downloadImageThenUpload(productResponse.getSlug(), 0);
+//                        downloadImageThenUpload(productResponse.getSlug(), 0);
+                        uploadProductImageViaURL(productResponse.getSlug(), 0);
                     }
                 }
             }
@@ -207,6 +209,50 @@ public class MainActivity extends AppCompatActivity {
                 uploadNextProduct();
             }
         });
+    }
+
+    private void uploadProductImageViaURL(final String splug, final int currentIndex) {
+        if (currentIndex < lstUrlPerProduct.size()) {
+            String url = lstUrlPerProduct.get(currentIndex);
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("url", url);
+            Call<ImageResponse> call = apiInterface.uploadImagev2(splug, Constant.token, jsonObject);
+            call.enqueue(new Callback<ImageResponse>() {
+                @Override
+                public void onResponse(Call<ImageResponse> call, Response<ImageResponse> response) {
+                    if (response.isSuccessful()) {
+                        Log.d("SUCCESS", "  COUNT " + nextProduct);
+                        // display imv
+                        Utils.glideUrl(getApplicationContext(), response.body().getProductUrl(), imvDownload);
+                        // increase
+                    } else {
+                        Log.d("FAIL", "  SOMETHING WENT WRONG WHEN UPLOAD THIS IMAGE " + nextProduct);
+                    }
+                    int index = currentIndex;
+                    index++;
+                    if (index < lstUrlPerProduct.size()) {
+                        // if still have image product, keep upload
+                        uploadProductImageViaURL(splug, index);
+                    } else {// keep upload product
+                        uploadNextProduct();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ImageResponse> call, Throwable t) {
+                    // if fail keep upload
+                    Log.d("FAIL", "number " + nextProduct);
+                    int index = currentIndex;
+                    index++;
+                    if (index < lstUrlPerProduct.size()) {
+                        // if still have image product, keep upload
+                        uploadProductImageViaURL(splug, index);
+                    } else {// keep upload product
+                        uploadNextProduct();
+                    }
+                }
+            });
+        }
     }
 
     private void downloadImageThenUpload(final String splug, final int index) {
@@ -265,16 +311,16 @@ public class MainActivity extends AppCompatActivity {
 
     private ArrayList<String> getListImageURL(Product product) {
         ArrayList<String> staticUrls = new ArrayList<>();
-        if (product.getProductImage1() != null) {
+        if (Utils.productUrlExist(product.getProductImage1())) {
             staticUrls.add(product.getProductImage1());
         }
-        if (product.getProductImage2() != null) {
+        if (Utils.productUrlExist(product.getProductImage2())) {
             staticUrls.add(product.getProductImage2());
         }
-        if (product.getProductImage3() != null) {
+        if (Utils.productUrlExist(product.getProductImage3())) {
             staticUrls.add(product.getProductImage3());
         }
-        if (product.getProductImage4() != null) {
+        if (Utils.productUrlExist(product.getProductImage4())) {
             staticUrls.add(product.getProductImage4());
         }
         return staticUrls;

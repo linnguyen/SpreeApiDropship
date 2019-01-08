@@ -4,9 +4,9 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.example.ryne.myapplication.Java.Constant
-import com.example.ryne.myapplication.Kotlin.request.Product
-import com.example.ryne.myapplication.Kotlin.response.ListProductResponse
-import com.example.ryne.myapplication.Kotlin.response.ProductResponse
+import com.example.ryne.myapplication.Kotlin.entity.request.Product
+import com.example.ryne.myapplication.Kotlin.entity.request.response.ListProductResponse
+import com.example.ryne.myapplication.Kotlin.entity.request.response.ProductResponse
 import com.example.ryne.myapplication.R
 import com.google.gson.Gson
 import com.google.gson.JsonElement

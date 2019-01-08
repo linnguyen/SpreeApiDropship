@@ -1,7 +1,7 @@
 package com.example.ryne.myapplication.Kotlin
 
-import com.example.ryne.myapplication.Kotlin.response.ListProductResponse
-import com.example.ryne.myapplication.Kotlin.response.ProductResponse
+import com.example.ryne.myapplication.Kotlin.entity.request.response.ListProductResponse
+import com.example.ryne.myapplication.Kotlin.entity.request.response.ProductResponse
 import com.google.gson.JsonObject
 import retrofit2.Call
 import retrofit2.http.Body
