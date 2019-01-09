@@ -30,6 +30,7 @@ import com.example.ryne.myapplication.Java.entity.response.ProductResponse;
 import com.example.ryne.myapplication.Java.localstorage.DAProduct;
 import com.example.ryne.myapplication.R;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.opencsv.CSVReader;
@@ -182,6 +183,10 @@ public class MainActivity extends AppCompatActivity {
         productJson.addProperty("price", product.getProductPrice());
         productJson.addProperty("description", product.getProductDescription1());
         productJson.addProperty("shipping_category", 1);
+        // taxons array
+        JsonArray jsonArray = new JsonArray();
+        jsonArray.add(3);
+        productJson.add("taxon_ids", jsonArray);
         JsonElement productElement = new Gson().fromJson(productJson, JsonElement.class);
         JsonObject jsonObject = new JsonObject();
         jsonObject.add("product", productElement);
@@ -330,7 +335,7 @@ public class MainActivity extends AppCompatActivity {
         // clear all product from list
         lstProduct.clear();
         // Read the raw csv file
-        InputStream is = getResources().openRawResource(R.raw.product);
+        InputStream is = getResources().openRawResource(R.raw.edc_emergenkit);
 
         // Reads text from character-input stream, buffering characters for efficient reading
         BufferedReader reader = new BufferedReader(
@@ -400,7 +405,7 @@ public class MainActivity extends AppCompatActivity {
         // clear list product
         lstProduct.clear();
         // Read the raw csv file
-        InputStream is = getResources().openRawResource(R.raw.product);
+        InputStream is = getResources().openRawResource(R.raw.edc_emergenkit);
 
         // Reads text from character-input stream, buffering characters for efficient reading
         BufferedReader reader = new BufferedReader(
