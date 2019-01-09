@@ -180,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
         JsonObject productJson = new JsonObject();
         productJson.addProperty("id", product.getId());
         productJson.addProperty("name", product.getProductName());
-        productJson.addProperty("price", product.getProductPrice());
+        productJson.addProperty("price", ProductUtils.increasePriceItemRandomly(product.getProductPrice()));
         productJson.addProperty("description", product.getProductDescription1());
         productJson.addProperty("shipping_category", 1);
         // taxons array
