@@ -335,7 +335,7 @@ public class MainActivity extends AppCompatActivity {
         // clear all product from list
         lstProduct.clear();
         // Read the raw csv file
-        InputStream is = getResources().openRawResource(R.raw.edc_emergenkit);
+        InputStream is = getResources().openRawResource(R.raw.cycling_smartridingequipment_saferiding);
 
         // Reads text from character-input stream, buffering characters for efficient reading
         BufferedReader reader = new BufferedReader(
