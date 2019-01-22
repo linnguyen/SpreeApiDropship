@@ -79,10 +79,6 @@ public class MainActivity extends AppCompatActivity {
     private int nextProduct;
     private ArrayList<String> lstUrlPerProduct;
 
-    public static String NAME = "Glass of Ryne ne";
-    public static String PRICE = "15.00";
-    public static String DESCRIPTION = "HI, LOOK GOOD TI";
-
     private DAProduct daProduct;
 
     // save fail product into sqlite and then export to recyclerview for result
@@ -101,7 +97,6 @@ public class MainActivity extends AppCompatActivity {
         tvUpload = findViewById(R.id.tvUpload);
         tvFinish = findViewById(R.id.tvFinish);
         tvNotice = findViewById(R.id.tvNotice);
-        btnUploadImage = findViewById(R.id.btnUploadImage);
         imvDownload = findViewById(R.id.imvDownload);
         tvNumber = findViewById(R.id.tvNumber);
         lstProduct = new ArrayList<>();
@@ -160,12 +155,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btnUploadImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-            }
-        });
     }
 
     private void uploadProduct(final Product product) {
@@ -185,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
         productJson.addProperty("shipping_category", 1);
         // taxons array
         JsonArray jsonArray = new JsonArray();
-        jsonArray.add(3);
+        jsonArray.add(5);
         productJson.add("taxon_ids", jsonArray);
         JsonElement productElement = new Gson().fromJson(productJson, JsonElement.class);
         JsonObject jsonObject = new JsonObject();
@@ -335,7 +324,7 @@ public class MainActivity extends AppCompatActivity {
         // clear all product from list
         lstProduct.clear();
         // Read the raw csv file
-        InputStream is = getResources().openRawResource(R.raw.cycling_smartridingequipment_saferiding);
+        InputStream is = getResources().openRawResource(R.raw.cycling_bicyclelight_wheellight);
 
         // Reads text from character-input stream, buffering characters for efficient reading
         BufferedReader reader = new BufferedReader(
