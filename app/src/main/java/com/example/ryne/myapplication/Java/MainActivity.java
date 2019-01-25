@@ -15,8 +15,11 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,9 +27,12 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.example.ryne.myapplication.Java.adapter.ReportAdapter;
+import com.example.ryne.myapplication.Java.adapter.TaxonAdpater;
 import com.example.ryne.myapplication.Java.entity.request.Product;
 import com.example.ryne.myapplication.Java.entity.response.ImageResponse;
 import com.example.ryne.myapplication.Java.entity.response.ProductResponse;
+import com.example.ryne.myapplication.Java.entity.response.Taxon;
+import com.example.ryne.myapplication.Java.entity.response.TaxonResponse;
 import com.example.ryne.myapplication.Java.localstorage.DAProduct;
 import com.example.ryne.myapplication.R;
 import com.google.gson.Gson;
@@ -70,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvNotice;
     private ImageView imvDownload;
     private TextView tvNumber;
+    private Spinner spinner;
 
 
     private DownloadTask myTask;
@@ -80,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> lstUrlPerProduct;
 
     private DAProduct daProduct;
+    private TaxonAdpater taxonAdpater;
+    private String taxonId;
 
     // save fail product into sqlite and then export to recyclerview for result
     // count the number that upload success and fail
@@ -99,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
         tvNotice = findViewById(R.id.tvNotice);
         imvDownload = findViewById(R.id.imvDownload);
         tvNumber = findViewById(R.id.tvNumber);
+        spinner = findViewById(R.id.spinnerTaxon);
         lstProduct = new ArrayList<>();
         daProduct = new DAProduct();
 
@@ -155,10 +165,27 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // taxpons spinner
+        taxonAdpater = new TaxonAdpater(getApplicationContext());
+        spinner.setAdapter(taxonAdpater);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                Taxon taxon = (Taxon) adapterView.getItemAtPosition(i);
+                taxonId = taxon.getId();
+                Toast.makeText(getApplicationContext(), "Selected item: "+taxonId, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+        getAllTaxons();
     }
 
     private void uploadProduct(final Product product) {
-        tvNumber.setText(nextProduct + "");
+        tvNumber.setText(nextProduct + "/"+ lstProduct.size());
 
         nextProduct++;
         //
@@ -171,10 +198,10 @@ public class MainActivity extends AppCompatActivity {
         productJson.addProperty("name", product.getProductName());
         productJson.addProperty("price", ProductUtils.increasePriceItemRandomly(product.getProductPrice()));
         productJson.addProperty("description", product.getProductDescription1());
-        productJson.addProperty("shipping_category", 1);
+        productJson.addProperty("shipping_category", 1 ); // Default
         // taxons array
         JsonArray jsonArray = new JsonArray();
-        jsonArray.add(5);
+        jsonArray.add(taxonId);
         productJson.add("taxon_ids", jsonArray);
         JsonElement productElement = new Gson().fromJson(productJson, JsonElement.class);
         JsonObject jsonObject = new JsonObject();
@@ -298,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
             uploadProduct(lstProduct.get(nextProduct));
         } else {
             tvNotice.setText("DONE!!");
-            List<ProductResponse> lstProduct = daProduct.getAll(getApplicationContext());
+//            List<ProductResponse> lstProduct = daProduct.getAll(getApplicationContext());
             Toast.makeText(getApplicationContext(), "Uploaded: " + lstProduct.size() + " items", Toast.LENGTH_LONG).show();
         }
     }
@@ -324,7 +351,7 @@ public class MainActivity extends AppCompatActivity {
         // clear all product from list
         lstProduct.clear();
         // Read the raw csv file
-        InputStream is = getResources().openRawResource(R.raw.cycling_bicyclelight_wheellight);
+        InputStream is = getResources().openRawResource(R.raw.camping_hikingtool_edcemergenctkit);
 
         // Reads text from character-input stream, buffering characters for efficient reading
         BufferedReader reader = new BufferedReader(
@@ -687,6 +714,23 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+            }
+        });
+    }
+
+    private void getAllTaxons(){
+        Call<TaxonResponse> call = apiInterface.getTaxons(Constant.token, true);
+        call.enqueue(new Callback<TaxonResponse>() {
+            @Override
+            public void onResponse(Call<TaxonResponse> call, Response<TaxonResponse> response) {
+                if (response.isSuccessful()){
+                    taxonAdpater.setTaxons(response.body().getTaxons());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<TaxonResponse> call, Throwable t) {
 
             }
         });

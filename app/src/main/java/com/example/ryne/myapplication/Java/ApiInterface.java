@@ -2,6 +2,7 @@ package com.example.ryne.myapplication.Java;
 
 import com.example.ryne.myapplication.Java.entity.response.ImageResponse;
 import com.example.ryne.myapplication.Java.entity.response.ProductResponse;
+import com.example.ryne.myapplication.Java.entity.response.TaxonResponse;
 import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
@@ -46,4 +47,7 @@ public interface ApiInterface {
 
     @POST("v1/products/{product_id}/image_upload")
     Call<ImageResponse> uploadImagev2(@Path(value = "product_id", encoded = true) String productId, @Query("token") String token, @Body JsonObject jsonObject);
+
+    @GET("v1/taxons")
+    Call<TaxonResponse> getTaxons(@Query("token") String token, @Query("without_children") boolean value);
 }
