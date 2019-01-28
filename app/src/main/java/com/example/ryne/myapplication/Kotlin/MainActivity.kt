@@ -7,6 +7,7 @@ import com.example.ryne.myapplication.Java.Constant
 import com.example.ryne.myapplication.Kotlin.entity.request.Product
 import com.example.ryne.myapplication.Kotlin.entity.request.response.ListProductResponse
 import com.example.ryne.myapplication.Kotlin.entity.request.response.ProductResponse
+import com.example.ryne.myapplication.Kotlin.entity.response.ImageResponse
 import com.example.ryne.myapplication.R
 import com.google.gson.Gson
 import com.google.gson.JsonElement
@@ -67,7 +68,7 @@ class MainActivity : AppCompatActivity() {
         var productJson = JsonObject()
         productJson.addProperty("id", product.id)
         productJson.addProperty("name", product.productName)
-        productJson.addProperty("price", product.productPrice)
+        productJson.addProperty("price", ProductUtils.increasePriceItemRandomly(product.productPrice!!))
         productJson.addProperty("description", product.productDescription1)
         productJson.addProperty("shipping_category", 1)
         val productElement = Gson().fromJson(productJson, JsonElement::class.java)
@@ -75,27 +76,38 @@ class MainActivity : AppCompatActivity() {
         jsonObject.add("product", productElement)
         val callResponse = ApiClient().createProduct(Constant.token, jsonObject)
         callResponse.enqueue(object : Callback<ProductResponse> {
-            override fun onFailure(call: Call<ProductResponse>?, t: Throwable?) {
-                Utils.showToast(applicationContext, "created product fail")
-            }
 
             override fun onResponse(call: Call<ProductResponse>?, response: Response<ProductResponse>?) {
                 if (response!!.isSuccessful) {
                     lstImageUrl = getListImageURL(product)
                     if (!lstImageUrl.isEmpty()) {
-                        downloadImageThenUpload(response.body().slug, 0)
+                        uploadProductImageViaURL(response.body().slug, 0)
                     }
                 }
+            }
+
+            override fun onFailure(call: Call<ProductResponse>?, t: Throwable?) {
+                Utils.showToast(applicationContext, "created product fail")
             }
         })
     }
 
-    fun downloadImageThenUpload(splug: String, index: Int) {
+    fun uploadProductImageViaURL(splug: String, index: Int) {
         if (index < lstImageUrl.size) {
             var url = lstImageUrl.get(index)
-            Glide.with(this)
-                    .load(url)
-                    .into(imvDownload)
+            val jsonObject = JsonObject()
+            jsonObject.addProperty("url", url)
+            val callResponse = ApiClient().uploadImage(splug, Constant.token, jsonObject)
+            callResponse.enqueue(object : Callback<ImageResponse> {
+                override fun onFailure(call: Call<ImageResponse>?, t: Throwable?) {
+
+                }
+
+                override fun onResponse(call: Call<ImageResponse>?, response: Response<ImageResponse>?) {
+
+                }
+
+            })
         }
     }
 
@@ -122,7 +134,7 @@ class MainActivity : AppCompatActivity() {
         // clear before read lines
         lstProduct.clear()
 
-        val inputStream = resources.openRawResource(R.raw.product_test)
+        val inputStream = resources.openRawResource(R.raw.camping_hikingtool_edcemergenctkit)
 
         val reader = BufferedReader(InputStreamReader(inputStream))
 
