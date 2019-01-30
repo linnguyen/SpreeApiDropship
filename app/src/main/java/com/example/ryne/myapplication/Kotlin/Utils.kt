@@ -2,7 +2,9 @@ package com.example.ryne.myapplication.Kotlin
 
 import android.content.Context
 import android.util.Log
+import android.widget.ImageView
 import android.widget.Toast
+import com.bumptech.glide.Glide
 
 class Utils {
     companion object {
@@ -13,5 +15,11 @@ class Utils {
         }
 
         fun indexExists(array: Array<String>, index: Int): Boolean = index >= 0 && index < array.size
+
+        fun glideUrl(context: Context, url: String, imageView: ImageView) {
+            Glide.with(context)
+                    .load(url)
+                    .into(imageView)
+        }
     }
 }

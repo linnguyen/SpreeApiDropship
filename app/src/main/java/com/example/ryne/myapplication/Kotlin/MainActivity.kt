@@ -2,14 +2,20 @@ package com.example.ryne.myapplication.Kotlin
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import com.bumptech.glide.Glide
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import com.example.ryne.myapplication.Java.Constant
+import com.example.ryne.myapplication.Kotlin.adapter.TaxonAdapter
 import com.example.ryne.myapplication.Kotlin.entity.request.Product
 import com.example.ryne.myapplication.Kotlin.entity.request.response.ListProductResponse
 import com.example.ryne.myapplication.Kotlin.entity.request.response.ProductResponse
 import com.example.ryne.myapplication.Kotlin.entity.response.ImageResponse
+import com.example.ryne.myapplication.Kotlin.entity.response.Taxon
+import com.example.ryne.myapplication.Kotlin.entity.response.TaxonResponse
 import com.example.ryne.myapplication.R
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.opencsv.CSVReader
@@ -25,6 +31,10 @@ class MainActivity : AppCompatActivity() {
     var lstProduct: MutableList<Product> = mutableListOf()
     var nextProduct = 0
     var lstImageUrl: MutableList<String> = mutableListOf()
+
+    lateinit var taxonAdapter: TaxonAdapter
+    var taxonId: String = ""
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,13 +59,27 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnCreate.setOnClickListener {
-            if (lstProduct.isEmpty()) {
+            if (lstProduct == null && lstProduct.isEmpty()) {
                 Utils.showToast(applicationContext, "Please read csv file before upload!")
             } else {
                 var product = lstProduct.get(nextProduct)
                 uploadProduct(product)
             }
         }
+
+        taxonAdapter = TaxonAdapter(applicationContext, R.layout.item_taxon, R.id.tv_taxon)
+        spinnerTaxon.adapter = taxonAdapter
+        spinnerTaxon.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(p0: AdapterView<*>?) {
+            }
+
+            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
+                taxonId = (p0!!.getItemAtPosition(p2) as Taxon).id!!
+                Utils.showToast(applicationContext, taxonId)
+            }
+
+        }
+        getTaxons()
     }
 
     fun uploadProduct(product: Product) {
@@ -70,7 +94,12 @@ class MainActivity : AppCompatActivity() {
         productJson.addProperty("name", product.productName)
         productJson.addProperty("price", ProductUtils.increasePriceItemRandomly(product.productPrice!!))
         productJson.addProperty("description", product.productDescription1)
-        productJson.addProperty("shipping_category", 1)
+        productJson.addProperty("total_on_hand", Constant.TOTAL_IN_HAND)
+        productJson.addProperty("shipping_category_id", "1") // Defaut
+        // taxons array
+        val jsonArray = JsonArray()
+        jsonArray.add(taxonId)
+        productJson.add("taxon_ids", jsonArray)
         val productElement = Gson().fromJson(productJson, JsonElement::class.java)
         val jsonObject = JsonObject()
         jsonObject.add("product", productElement)
@@ -88,23 +117,55 @@ class MainActivity : AppCompatActivity() {
 
             override fun onFailure(call: Call<ProductResponse>?, t: Throwable?) {
                 Utils.showToast(applicationContext, "created product fail")
+                // if fail, keep upload
+
+                // add the fail product here to DB for tracking later
+
+                uploadNextProduct()
             }
         })
     }
 
-    fun uploadProductImageViaURL(splug: String, index: Int) {
-        if (index < lstImageUrl.size) {
-            var url = lstImageUrl.get(index)
+    fun uploadNextProduct() {
+        if (nextProduct < lstProduct.size) {
+            uploadProduct(lstProduct.get(nextProduct))
+        } else {
+            tvNotice.setText("DONE UPLOADED")
+            Utils.showToast(applicationContext, "Uploaded: " + lstProduct.size + " items")
+        }
+    }
+
+    fun uploadProductImageViaURL(splug: String, currentIndex: Int) {
+        if (currentIndex < lstImageUrl.size) {
+            var url = lstImageUrl.get(currentIndex)
             val jsonObject = JsonObject()
             jsonObject.addProperty("url", url)
             val callResponse = ApiClient().uploadImage(splug, Constant.token, jsonObject)
             callResponse.enqueue(object : Callback<ImageResponse> {
                 override fun onFailure(call: Call<ImageResponse>?, t: Throwable?) {
+                    var index = currentIndex
+                    index++
+                    if (index < lstImageUrl.size) {
+                        // if still have image product, keep upload
+                        uploadProductImageViaURL(splug, index)
+                    } else {// keep upload product
+                        uploadNextProduct()
+                    }
 
                 }
 
                 override fun onResponse(call: Call<ImageResponse>?, response: Response<ImageResponse>?) {
+                    if (response!!.isSuccessful) {
+                        Utils.glideUrl(applicationContext, response.body().productUrl, imvDownload)
+                    }
 
+                    var index = currentIndex
+                    index++;
+                    if (index < lstImageUrl.size) {
+                        uploadProductImageViaURL(splug, index)
+                    } else {
+                        uploadNextProduct()
+                    }
                 }
 
             })
@@ -127,6 +188,24 @@ class MainActivity : AppCompatActivity() {
         if (product.productImage4 != null) {
             staticUrls.add(product.productImage4!!)
         }
+        if (product.productImage5 != null) {
+            staticUrls.add(product.productImage5!!)
+        }
+        if (product.productImage6 != null) {
+            staticUrls.add(product.productImage6!!)
+        }
+        if (product.productImage7 != null) {
+            staticUrls.add(product.productImage7!!)
+        }
+        if (product.productImage8 != null) {
+            staticUrls.add(product.productImage8!!)
+        }
+        if (product.productImage9 != null) {
+            staticUrls.add(product.productImage9!!)
+        }
+        if (product.productImage10 != null) {
+            staticUrls.add(product.productImage10!!)
+        }
         return staticUrls
     }
 
@@ -134,7 +213,7 @@ class MainActivity : AppCompatActivity() {
         // clear before read lines
         lstProduct.clear()
 
-        val inputStream = resources.openRawResource(R.raw.camping_hikingtool_edcemergenctkit)
+        val inputStream = resources.openRawResource(R.raw.product_test)
 
         val reader = BufferedReader(InputStreamReader(inputStream))
 
@@ -193,5 +272,19 @@ class MainActivity : AppCompatActivity() {
         Utils.showToast(applicationContext, "Total items " + lstProduct.size)
 
         return lstProduct
+    }
+
+    fun getTaxons() {
+        val callResponse = ApiClient().getTaxons(Constant.token)
+        callResponse.enqueue(object : Callback<TaxonResponse> {
+            override fun onFailure(call: Call<TaxonResponse>?, t: Throwable?) {
+
+            }
+
+            override fun onResponse(call: Call<TaxonResponse>?, response: Response<TaxonResponse>?) {
+                taxonAdapter.setTaxons(response!!.body().taxons)
+            }
+
+        })
     }
 }

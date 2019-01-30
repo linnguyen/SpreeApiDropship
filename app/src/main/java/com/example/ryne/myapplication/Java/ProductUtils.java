@@ -5,9 +5,9 @@ import java.util.Random;
 public class ProductUtils {
     public static double increasePriceItemRandomly(String price) {
         double actualPrice = Double.valueOf(price);
-        int a = 30;
-        int b = 20;
+        int a = 40;
+        int b = 30;
         int c = new Random().nextBoolean() ? a : b;
-        return actualPrice * c / 100;
+        return actualPrice + actualPrice * c / 100;
     }
 }

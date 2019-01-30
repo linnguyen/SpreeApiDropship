@@ -11,4 +11,6 @@ public class Constant {
 //    public  static String BASE_URL = "http://157.230.60.184/api/";
 
     public static String token = "5e9174331e05e95a963c8db7593511f03bcc0c71b21e1f76";
+
+    public static int TOTAL_IN_HAND = 5;
 }

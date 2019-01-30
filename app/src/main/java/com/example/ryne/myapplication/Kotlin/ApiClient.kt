@@ -4,6 +4,7 @@ import com.example.ryne.myapplication.Java.Constant
 import com.example.ryne.myapplication.Kotlin.entity.request.response.ListProductResponse
 import com.example.ryne.myapplication.Kotlin.entity.request.response.ProductResponse
 import com.example.ryne.myapplication.Kotlin.entity.response.ImageResponse
+import com.example.ryne.myapplication.Kotlin.entity.response.TaxonResponse
 import com.google.gson.JsonObject
 import retrofit2.Call
 import retrofit2.Retrofit
@@ -33,5 +34,9 @@ class ApiClient {
 
     fun uploadImage(productId: String, token: String, jsonObject: JsonObject): Call<ImageResponse> {
         return apiInterface.uploadImagev2(productId, token, jsonObject)
+    }
+
+    fun getTaxons(token: String): Call<TaxonResponse> {
+        return apiInterface.getTaxons(token, true)
     }
 }

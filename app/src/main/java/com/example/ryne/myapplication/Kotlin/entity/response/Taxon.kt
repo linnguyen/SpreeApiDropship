@@ -34,4 +34,9 @@ class Taxon(
         @SerializedName("meta_description")
 
         var metaDescription: String? = null
-)
+) {
+    override fun toString(): String {
+        return this.prettyName.toString()
+    }
+}
+
