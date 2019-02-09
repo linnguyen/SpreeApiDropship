@@ -5,9 +5,9 @@ import java.util.*
 class ProductUtils {
     companion object {
         fun increasePriceItemRandomly(price: String) = when {
-            Random().nextBoolean() -> price.toDouble() * 30 / 100
+            Random().nextBoolean() -> price.toDouble() * 50 / 100
             else -> {
-                price.toDouble() * 20 / 100
+                price.toDouble() * 40 / 100
             }
         }
     }

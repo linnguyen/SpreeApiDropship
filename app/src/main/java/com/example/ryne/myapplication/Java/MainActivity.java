@@ -185,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void uploadProduct(final Product product) {
-        tvNumber.setText(nextProduct + "/" + lstProduct.size());
+        tvNumber.setText((nextProduct + 1) + "/" + lstProduct.size());
 
         nextProduct++;
         //
@@ -199,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
         productJson.addProperty("price", ProductUtils.increasePriceItemRandomly(product.getProductPrice()));
         productJson.addProperty("description", product.getProductDescription1());
         productJson.addProperty("total_on_hand", Constant.TOTAL_IN_HAND);
-        productJson.addProperty("shipping_category_id", 1); // Default
+        productJson.addProperty("shipping_category", 1); // Default
         // taxons array
         JsonArray jsonArray = new JsonArray();
         jsonArray.add(taxonId);
@@ -375,7 +375,7 @@ public class MainActivity extends AppCompatActivity {
         // clear all product from list
         lstProduct.clear();
         // Read the raw csv file
-        InputStream is = getResources().openRawResource(R.raw.product_test);
+        InputStream is = getResources().openRawResource(R.raw.fitness_sportsmartwatch);
 
         // Reads text from character-input stream, buffering characters for efficient reading
         BufferedReader reader = new BufferedReader(
@@ -429,6 +429,24 @@ public class MainActivity extends AppCompatActivity {
                 }
                 if (Utils.indexExists(nextLine, 19)) {
                     product.setProductImage4(nextLine[19]);
+                }
+                if (Utils.indexExists(nextLine, 20)) {
+                    product.setProductImage4(nextLine[20]);
+                }
+                if (Utils.indexExists(nextLine, 21)) {
+                    product.setProductImage4(nextLine[21]);
+                }
+                if (Utils.indexExists(nextLine, 22)) {
+                    product.setProductImage4(nextLine[22]);
+                }
+                if (Utils.indexExists(nextLine, 23)) {
+                    product.setProductImage4(nextLine[23]);
+                }
+                if (Utils.indexExists(nextLine, 24)) {
+                    product.setProductImage4(nextLine[24]);
+                }
+                if (Utils.indexExists(nextLine, 25)) {
+                    product.setProductImage4(nextLine[25]);
                 }
                 lstProduct.add(product);
 
