@@ -72,8 +72,11 @@
     </LinearLayout>
 
     <GridLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:columnCount="4"
+        android:orientation="horizontal"
+        android:rowCount="2">
 
         <Button
             android:id="@+id/btnFetch"
@@ -98,6 +101,18 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="See Report" />
+
+        <Button
+            android:id="@+id/btnReadFile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Upload File" />
+
+        <TextView
+            android:id="@+id/tvFileName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            />
 
     </GridLayout>
 </LinearLayout>

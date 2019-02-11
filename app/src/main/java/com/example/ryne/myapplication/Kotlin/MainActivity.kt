@@ -1,10 +1,20 @@
 package com.example.ryne.myapplication.Kotlin
 
+import android.app.Activity
+import android.content.ContentUris
+import android.content.Context
+import android.content.CursorLoader
+import android.content.Intent
+import android.database.Cursor
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.DocumentsContract
+import android.provider.MediaStore
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import com.example.ryne.myapplication.Java.Constant
 import com.example.ryne.myapplication.Kotlin.adapter.TaxonAdapter
 import com.example.ryne.myapplication.Kotlin.entity.request.Product
@@ -24,7 +34,8 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.io.FileReader
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,6 +45,7 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var taxonAdapter: TaxonAdapter
     var taxonId: String = ""
+    lateinit var selectedFile: Uri
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,6 +79,13 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        btnReadFile.setOnClickListener {
+            val intent = Intent()
+                    .setType("*/*")
+                    .setAction(Intent.ACTION_GET_CONTENT)
+            startActivityForResult(Intent.createChooser(intent, "Select a file"), 111)
+        }
+
         taxonAdapter = TaxonAdapter(applicationContext, R.layout.item_taxon, R.id.tv_taxon)
         spinnerTaxon.adapter = taxonAdapter
         spinnerTaxon.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
@@ -82,7 +101,16 @@ class MainActivity : AppCompatActivity() {
         getTaxons()
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 111 && resultCode == Activity.RESULT_OK) {
+            selectedFile = data?.data!!
+            Utils.log(selectedFile.toString())
+        }
+    }
+
     fun uploadProduct(product: Product) {
+        tvNumber.text = (nextProduct + 1).toString() + "/" + lstProduct.size
         nextProduct++
         //
         tvUpload.text = "Uploading: " + product.id
@@ -209,13 +237,29 @@ class MainActivity : AppCompatActivity() {
         return staticUrls
     }
 
+    fun getPath(uri: Uri): String {
+        val data = arrayOf(MediaStore.Images.Media.DATA)
+        val loader = CursorLoader(applicationContext, uri, data, null, null, null)
+        val cursor = loader.loadInBackground()
+        val column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+        cursor.moveToFirst()
+        return cursor.getString(column_index)
+    }
+
     fun readProductDataLib(): List<Product>? {
         // clear before read lines
         lstProduct.clear()
 
-        val inputStream = resources.openRawResource(R.raw.product_test)
+        val fullPath = getPath(applicationContext, selectedFile)
 
-        val reader = BufferedReader(InputStreamReader(inputStream))
+        //val inputStream = resources.openRawResource(R.raw.fitness_sportsmartwatch)
+        //val file = File(selectedFile.path)
+
+        // val inputStream = FileInputStream(getPath(selectedFile))
+
+        val fileReader = FileReader(fullPath)
+
+        val reader = BufferedReader(fileReader)
 
         val csvReader = CSVReader(reader)
 
@@ -264,6 +308,24 @@ class MainActivity : AppCompatActivity() {
             if (Utils.indexExists(nextLine, 19)) {
                 product.productImage4 = nextLine[19]
             }
+            if (Utils.indexExists(nextLine, 20)) {
+                product.productImage5 = nextLine[20]
+            }
+            if (Utils.indexExists(nextLine, 21)) {
+                product.productImage6 = nextLine[21]
+            }
+            if (Utils.indexExists(nextLine, 22)) {
+                product.productImage7 = nextLine[22]
+            }
+            if (Utils.indexExists(nextLine, 23)) {
+                product.productImage8 = nextLine[23]
+            }
+            if (Utils.indexExists(nextLine, 24)) {
+                product.productImage9 = nextLine[24]
+            }
+            if (Utils.indexExists(nextLine, 25)) {
+                product.productImage10 = nextLine[25]
+            }
             lstProduct.add(product)
             count++
 
@@ -286,5 +348,94 @@ class MainActivity : AppCompatActivity() {
             }
 
         })
+    }
+
+    fun getPath(context: Context, uri: Uri): String? {
+        // DocumentProvider
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && DocumentsContract.isDocumentUri(context, uri)) {
+            // ExternalStorageProvider
+            if (isExternalStorageDocument(uri)) {
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val type = split[0]
+
+                if ("primary".equals(type, ignoreCase = true)) {
+                    return Environment.getExternalStorageDirectory().absolutePath + "/" + split[1]
+                }
+            } else if (isDownloadsDocument(uri)) {// DownloadsProvider
+                val id = DocumentsContract.getDocumentId(uri)
+                val contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), java.lang.Long.valueOf(id))
+                return getDataColumn(context, contentUri, null, null)
+
+            } else if (isMediaDocument(uri)) { // MediaProvider
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val type = split[0]
+                var contentUri: Uri? = null
+                if ("image" == type) {
+                    contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                } else if ("video" == type) {
+                    contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                } else if ("audio" == type) {
+                    contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                }
+                val selection = "_id=?"
+                val selectionArgs = arrayOf(split[1])
+                return getDataColumn(context, contentUri, selection, selectionArgs)
+
+            }
+        } else if ("content".equals(uri.scheme!!, ignoreCase = true)) {// MediaStore (and general)
+            // Return the remote address
+            return if (isGooglePhotosUri(uri)) uri.lastPathSegment else getDataColumn(context, uri, null, null)
+
+        } else if ("file".equals(uri.scheme!!, ignoreCase = true)) {// File
+            return uri.path
+        }
+        return null
+    }
+
+    fun getDataColumn(context: Context, uri: Uri?, selection: String?, selectionArgs: Array<String>?): String? {
+        var cursor: Cursor? = null
+        val column = "_data"
+        val projection = arrayOf(column)
+        try {
+            cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs, null)
+            if (cursor != null && cursor!!.moveToFirst()) {
+                val index = cursor!!.getColumnIndexOrThrow(column)
+                return cursor!!.getString(index)
+            }
+        } finally {
+            if (cursor != null)
+                cursor!!.close()
+        }
+        return null
+    }
+
+    fun isExternalStorageDocument(uri: Uri): Boolean {
+        return "com.android.externalstorage.documents" == uri.authority
+    }
+
+    /**
+     * @param uri The Uri to check.
+     * @return Whether the Uri authority is DownloadsProvider.
+     */
+    fun isDownloadsDocument(uri: Uri): Boolean {
+        return "com.android.providers.downloads.documents" == uri.authority
+    }
+
+    /**
+     * @param uri The Uri to check.
+     * @return Whether the Uri authority is MediaProvider.
+     */
+    fun isMediaDocument(uri: Uri): Boolean {
+        return "com.android.providers.media.documents" == uri.authority
+    }
+
+    /**
+     * @param uri The Uri to check.
+     * @return Whether the Uri authority is Google Photos.
+     */
+    fun isGooglePhotosUri(uri: Uri): Boolean {
+        return "com.google.android.apps.photos.content" == uri.authority
     }
 }

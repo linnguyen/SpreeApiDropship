@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
 
     // save fail product into sqlite and then export to recyclerview for result
     // count the number that upload success and fail
-    // display the item number that uploaded on UI
+    // display the item number that uploadfed on UI
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -431,22 +431,22 @@ public class MainActivity extends AppCompatActivity {
                     product.setProductImage4(nextLine[19]);
                 }
                 if (Utils.indexExists(nextLine, 20)) {
-                    product.setProductImage4(nextLine[20]);
+                    product.setProductImage5(nextLine[20]);
                 }
                 if (Utils.indexExists(nextLine, 21)) {
-                    product.setProductImage4(nextLine[21]);
+                    product.setProductImage6(nextLine[21]);
                 }
                 if (Utils.indexExists(nextLine, 22)) {
-                    product.setProductImage4(nextLine[22]);
+                    product.setProductImage7(nextLine[22]);
                 }
                 if (Utils.indexExists(nextLine, 23)) {
-                    product.setProductImage4(nextLine[23]);
+                    product.setProductImage8(nextLine[23]);
                 }
                 if (Utils.indexExists(nextLine, 24)) {
-                    product.setProductImage4(nextLine[24]);
+                    product.setProductImage9(nextLine[24]);
                 }
                 if (Utils.indexExists(nextLine, 25)) {
-                    product.setProductImage4(nextLine[25]);
+                    product.setProductImage10(nextLine[25]);
                 }
                 lstProduct.add(product);
 
