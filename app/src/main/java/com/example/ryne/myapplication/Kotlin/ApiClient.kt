@@ -4,7 +4,9 @@ import com.example.ryne.myapplication.Java.Constant
 import com.example.ryne.myapplication.Kotlin.entity.request.response.ListProductResponse
 import com.example.ryne.myapplication.Kotlin.entity.request.response.ProductResponse
 import com.example.ryne.myapplication.Kotlin.entity.response.ImageResponse
+import com.example.ryne.myapplication.Kotlin.entity.response.OptionValue
 import com.example.ryne.myapplication.Kotlin.entity.response.TaxonResponse
+import com.example.ryne.myapplication.Kotlin.entity.response.Variant
 import com.google.gson.JsonObject
 import retrofit2.Call
 import retrofit2.Retrofit
@@ -38,5 +40,13 @@ class ApiClient {
 
     fun getTaxons(token: String): Call<TaxonResponse> {
         return apiInterface.getTaxons(token, true)
+    }
+
+    fun findOrCreateBy(optionTypeId: String, token: String, jsonObject: JsonObject): Call<OptionValue> {
+        return apiInterface.findOrCreateOptionValue(optionTypeId, token, jsonObject)
+    }
+
+    fun createVariant(productId: String, token: String, jsonObject: JsonObject): Call<Variant> {
+        return apiInterface.createVariant(productId, token, jsonObject)
     }
 }

@@ -5,10 +5,14 @@ import java.util.*
 class ProductUtils {
     companion object {
         fun increasePriceItemRandomly(price: String) = when {
-            Random().nextBoolean() -> price.toDouble() * 50 / 100
+            Random().nextBoolean() -> price.toDouble() + price.toDouble() * 80 / 100
             else -> {
-                price.toDouble() * 40 / 100
+                price.toDouble() + price.toDouble() * 75 / 100
             }
+        }
+
+        fun isStringNotEmpty(string: String): Boolean {
+            return !string.equals("")
         }
     }
 }

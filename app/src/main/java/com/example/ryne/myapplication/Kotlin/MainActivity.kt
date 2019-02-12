@@ -20,9 +20,7 @@ import com.example.ryne.myapplication.Kotlin.adapter.TaxonAdapter
 import com.example.ryne.myapplication.Kotlin.entity.request.Product
 import com.example.ryne.myapplication.Kotlin.entity.request.response.ListProductResponse
 import com.example.ryne.myapplication.Kotlin.entity.request.response.ProductResponse
-import com.example.ryne.myapplication.Kotlin.entity.response.ImageResponse
-import com.example.ryne.myapplication.Kotlin.entity.response.Taxon
-import com.example.ryne.myapplication.Kotlin.entity.response.TaxonResponse
+import com.example.ryne.myapplication.Kotlin.entity.response.*
 import com.example.ryne.myapplication.R
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -34,13 +32,13 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.BufferedReader
-import java.io.FileReader
+import java.io.InputStreamReader
 
 
 class MainActivity : AppCompatActivity() {
 
     var lstProduct: MutableList<Product> = mutableListOf()
-    var nextProduct = 0
+    var currentProduct = 0
     var lstImageUrl: MutableList<String> = mutableListOf()
 
     lateinit var taxonAdapter: TaxonAdapter
@@ -71,10 +69,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnCreate.setOnClickListener {
-            if (lstProduct == null && lstProduct.isEmpty()) {
+            if (lstProduct.size == 0) {
                 Utils.showToast(applicationContext, "Please read csv file before upload!")
             } else {
-                var product = lstProduct.get(nextProduct)
+                currentProduct = 0
+                var product = lstProduct.get(0)
                 uploadProduct(product)
             }
         }
@@ -110,8 +109,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun uploadProduct(product: Product) {
-        tvNumber.text = (nextProduct + 1).toString() + "/" + lstProduct.size
-        nextProduct++
+        tvNumber.text = (currentProduct + 1).toString() + "/" + lstProduct.size
         //
         tvUpload.text = "Uploading: " + product.id
         //
@@ -138,8 +136,8 @@ class MainActivity : AppCompatActivity() {
                 if (response!!.isSuccessful) {
                     lstImageUrl = getListImageURL(product)
                     if (!lstImageUrl.isEmpty()) {
-                        uploadProductImageViaURL(response.body().slug, 0)
-                    }
+                        uploadProductImageViaURL(response.body(), 0)
+                    } // no need to check here because product always have images
                 }
             }
 
@@ -155,29 +153,95 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun uploadNextProduct() {
-        if (nextProduct < lstProduct.size) {
-            uploadProduct(lstProduct.get(nextProduct))
+        // increase currentProduct for the next upload
+        currentProduct++
+        if (currentProduct < lstProduct.size) {
+            uploadProduct(lstProduct.get(currentProduct))
         } else {
             tvNotice.setText("DONE UPLOADED")
             Utils.showToast(applicationContext, "Uploaded: " + lstProduct.size + " items")
         }
     }
 
-    fun uploadProductImageViaURL(splug: String, currentIndex: Int) {
+    // find the option value if exist or create a new one
+    fun uploadProductVariant(options: Array<String>, index: Int, product: ProductResponse) {
+        if (index < options.size) {
+            var optionValue = options.get(index)
+            optionValue = optionValue.replace("Color", "") // remove color from string
+            optionValue = optionValue.replace("Size", "") // remove color from string
+            var valueArr = optionValue.split(" ")
+            val jsonObject = JsonObject()
+            jsonObject.addProperty("name", optionValue)
+            jsonObject.addProperty("presentation", optionValue)
+            val callResponse = ApiClient().findOrCreateBy("1", Constant.token, jsonObject)
+            callResponse.enqueue(object : Callback<OptionValue> {
+                override fun onFailure(call: Call<OptionValue>?, t: Throwable?) {
+                    var nextVariant = index + 1;
+                    if (nextVariant < options.size && ProductUtils.isStringNotEmpty(options.get(nextVariant))) {
+                        uploadProductVariant(options, nextVariant, product)
+                    }
+                }
+
+                override fun onResponse(call: Call<OptionValue>?, response: Response<OptionValue>?) {
+                    createVariant(response?.body()?.id, product, options, index)
+                }
+            })
+        }
+    }
+
+    // create variant by id return
+    fun createVariant(optionValueId: String?, product: ProductResponse, options: Array<String>, index: Int) {
+        val variantObject = JsonObject()
+        variantObject.addProperty("price", product.price)
+
+        // add option_value_ids array
+        val jsonArray = JsonArray()
+        jsonArray.add(optionValueId)
+        variantObject.add("option_value_ids", jsonArray)
+
+        // add node json variant by using JsonElement
+        val productElement = Gson().fromJson(variantObject, JsonElement::class.java)
+        val jsonObject = JsonObject()
+        jsonObject.add("variant", productElement)
+
+        val callResponse = ApiClient().createVariant(product.slug, Constant.token, jsonObject)
+        callResponse.enqueue(object : Callback<Variant> {
+            override fun onFailure(call: Call<Variant>?, t: Throwable?) {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+            }
+
+            override fun onResponse(call: Call<Variant>?, response: Response<Variant>?) {
+                var nextVariant = index + 1;
+                if (nextVariant < options.size) {
+                    uploadProductVariant(options, nextVariant, product)
+                } else { // if no variant left, keep upload next product
+                    uploadNextProduct()
+                }
+            }
+        })
+    }
+
+    fun uploadProductImageViaURL(product: ProductResponse, currentIndex: Int) {
         if (currentIndex < lstImageUrl.size) {
             var url = lstImageUrl.get(currentIndex)
             val jsonObject = JsonObject()
             jsonObject.addProperty("url", url)
-            val callResponse = ApiClient().uploadImage(splug, Constant.token, jsonObject)
+            val callResponse = ApiClient().uploadImage(product.slug, Constant.token, jsonObject)
             callResponse.enqueue(object : Callback<ImageResponse> {
                 override fun onFailure(call: Call<ImageResponse>?, t: Throwable?) {
                     var index = currentIndex
                     index++
                     if (index < lstImageUrl.size) {
                         // if still have image product, keep upload
-                        uploadProductImageViaURL(splug, index)
-                    } else {// keep upload product
-                        uploadNextProduct()
+                        uploadProductImageViaURL(product, index)
+                    } else {// if product have variant, upload varient. if not keep upload product
+                        if (ProductUtils.isStringNotEmpty(lstProduct.get(currentProduct).options!!)) {
+                            val optionsStr = lstProduct.get(currentProduct).options
+                            val options = optionsStr!!.split("/").toTypedArray()
+                            uploadProductVariant(options, 0, product)
+                        } else {
+                            uploadNextProduct()
+                        }
                     }
 
                 }
@@ -188,11 +252,18 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     var index = currentIndex
-                    index++;
+                    index++
                     if (index < lstImageUrl.size) {
-                        uploadProductImageViaURL(splug, index)
-                    } else {
-                        uploadNextProduct()
+                        // if still have image product, keep upload
+                        uploadProductImageViaURL(product, index)
+                    } else {// if product have variant, upload varient. if not keep upload product
+                        if (ProductUtils.isStringNotEmpty(lstProduct.get(currentProduct).options!!)) {
+                            val optionsStr = lstProduct.get(currentProduct).options
+                            val options = optionsStr!!.split("/").toTypedArray()
+                            uploadProductVariant(options, 0, product)
+                        } else {
+                            uploadNextProduct()
+                        }
                     }
                 }
 
@@ -250,16 +321,9 @@ class MainActivity : AppCompatActivity() {
         // clear before read lines
         lstProduct.clear()
 
-        val fullPath = getPath(applicationContext, selectedFile)
+        val inputStream = resources.openRawResource(R.raw.fitness_sportsmartwatch)
 
-        //val inputStream = resources.openRawResource(R.raw.fitness_sportsmartwatch)
-        //val file = File(selectedFile.path)
-
-        // val inputStream = FileInputStream(getPath(selectedFile))
-
-        val fileReader = FileReader(fullPath)
-
-        val reader = BufferedReader(fileReader)
+        val reader = BufferedReader(InputStreamReader(inputStream))
 
         val csvReader = CSVReader(reader)
 
@@ -340,7 +404,7 @@ class MainActivity : AppCompatActivity() {
         val callResponse = ApiClient().getTaxons(Constant.token)
         callResponse.enqueue(object : Callback<TaxonResponse> {
             override fun onFailure(call: Call<TaxonResponse>?, t: Throwable?) {
-
+                Utils.log("ERROR")
             }
 
             override fun onResponse(call: Call<TaxonResponse>?, response: Response<TaxonResponse>?) {

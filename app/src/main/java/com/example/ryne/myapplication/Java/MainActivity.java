@@ -375,7 +375,7 @@ public class MainActivity extends AppCompatActivity {
         // clear all product from list
         lstProduct.clear();
         // Read the raw csv file
-        InputStream is = getResources().openRawResource(R.raw.fitness_sportsmartwatch);
+        InputStream is = getResources().openRawResource(R.raw.outdoor_clothing_shoes);
 
         // Reads text from character-input stream, buffering characters for efficient reading
         BufferedReader reader = new BufferedReader(
@@ -463,7 +463,7 @@ public class MainActivity extends AppCompatActivity {
         // clear list product
         lstProduct.clear();
         // Read the raw csv file
-        InputStream is = getResources().openRawResource(R.raw.edc_emergenkit);
+        InputStream is = getResources().openRawResource(R.raw.product_test);
 
         // Reads text from character-input stream, buffering characters for efficient reading
         BufferedReader reader = new BufferedReader(
