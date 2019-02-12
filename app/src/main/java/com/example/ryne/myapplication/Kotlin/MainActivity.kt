@@ -72,6 +72,8 @@ class MainActivity : AppCompatActivity() {
             if (lstProduct.size == 0) {
                 Utils.showToast(applicationContext, "Please read csv file before upload!")
             } else {
+                // check if all option value are synchronous on server
+                //
                 currentProduct = 0
                 var product = lstProduct.get(0)
                 uploadProduct(product)
@@ -100,11 +102,20 @@ class MainActivity : AppCompatActivity() {
         getTaxons()
     }
 
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 111 && resultCode == Activity.RESULT_OK) {
             selectedFile = data?.data!!
             Utils.log(selectedFile.toString())
+        }
+    }
+
+    fun getAllOptionValuesForCurrentProducts(){
+        for (product: Product in lstProduct){
+            if (ProductUtils.isStringNotEmpty(product.options!!)){
+
+            }
         }
     }
 
