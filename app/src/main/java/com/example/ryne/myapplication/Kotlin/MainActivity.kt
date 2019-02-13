@@ -28,11 +28,13 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.opencsv.CSVReader
 import kotlinx.android.synthetic.main.activity_main_jav.*
+import org.apache.commons.lang3.StringUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.lang.Exception
 
 
 class MainActivity : AppCompatActivity() {
@@ -73,11 +75,33 @@ class MainActivity : AppCompatActivity() {
                 Utils.showToast(applicationContext, "Please read csv file before upload!")
             } else {
                 // check if all option value are synchronous on server
-                //
-                currentProduct = 0
-                var product = lstProduct.get(0)
-                uploadProduct(product)
+                val callResponse = ApiClient().getAllOptionValues(Constant.token)
+                callResponse.enqueue(object : Callback<List<OptionValue>> {
+                    override fun onFailure(call: Call<List<OptionValue>>?, t: Throwable?) {
+                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                    }
+
+                    override fun onResponse(call: Call<List<OptionValue>>?, response: Response<List<OptionValue>>?) {
+                        val lstOption = getAllOptionValuesForCurrentProducts()
+                        for (value: OptionValue in lstOption) {
+                            if (!response!!.body().any { x -> x.name.equals(value.name) }) { // check if any option value not create on the server for the current option list
+                                layoutOptionValue.visibility = View.VISIBLE
+                                return
+                            }
+                        }
+                        // if ok then go ahead to create product
+                        currentProduct = 0
+                        var product = lstProduct.get(0)
+                        uploadProduct(product)
+                    }
+
+                })
             }
+        }
+
+        btnCreateOptionValue.setOnClickListener {
+            val lstOption = getAllOptionValuesForCurrentProducts()
+            createOptionValue(lstOption, 0)
         }
 
         btnReadFile.setOnClickListener {
@@ -111,12 +135,47 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun getAllOptionValuesForCurrentProducts(){
-        for (product: Product in lstProduct){
-            if (ProductUtils.isStringNotEmpty(product.options!!)){
-
+    fun getAllOptionValuesForCurrentProducts(): MutableList<OptionValue> {
+        var optionLst: MutableList<OptionValue> = mutableListOf()
+        for (product: Product in lstProduct) {
+            if (ProductUtils.isStringNotEmpty(product.options!!)) {
+                val option = product.options
+                val optionArr = option?.split("/")
+                for (option: String in optionArr!!) {
+                    if (option.equals("")) continue // skip the empty string
+                    if (option?.contains("Size")!! && option?.contains("Color")!!) { // both size and color
+                        try {
+                            val size = StringUtils.substringBetween(option, "Size", "Color").trim()
+                            val sizeOption = OptionValue("", size, "", "Size", "1", "")
+                            if (!optionLst.any { x -> x.name.equals(sizeOption.name) }) {
+                                optionLst.add(sizeOption) // size
+                            }
+                            val color = option.substring(option.indexOf("Color")).replace("Color", "").trim()
+                            val colorOption = OptionValue("", color, "", "Color", "2", "")
+                            if (!optionLst.any { x -> x.name.equals(colorOption.name) }) {
+                                optionLst.add(colorOption) // color
+                            }
+                        } catch (e: Exception) {
+                            // if the option is not in the right format, we skip this and go ahead to next option
+                            continue
+                        }
+                    } else if (option?.contains("Size")!! && !option?.contains("Color")!!) { // only size not color
+                        val size = option.replace("Size", "").trim()
+                        val sizeOption = OptionValue("", size, "", "Size", "1", "")
+                        if (!optionLst.any { x -> x.name.equals(sizeOption.name) }) {
+                            optionLst.add(sizeOption) // size
+                        }
+                    } else {  // only color not size
+                        val color = option.replace("Color", "").trim()
+                        val colorOption = OptionValue("", color, "", "Color", "2", "")
+                        if (!optionLst.any { x -> x.name.equals(colorOption.name) }) {
+                            optionLst.add(colorOption) // color
+                        }
+                    }
+                }
             }
         }
+        return optionLst
     }
 
     fun uploadProduct(product: Product) {
@@ -175,39 +234,79 @@ class MainActivity : AppCompatActivity() {
     }
 
     // find the option value if exist or create a new one
-    fun uploadProductVariant(options: Array<String>, index: Int, product: ProductResponse) {
+    fun createOptionValue(options: List<OptionValue>, index: Int) {
         if (index < options.size) {
             var optionValue = options.get(index)
-            optionValue = optionValue.replace("Color", "") // remove color from string
-            optionValue = optionValue.replace("Size", "") // remove color from string
-            var valueArr = optionValue.split(" ")
             val jsonObject = JsonObject()
-            jsonObject.addProperty("name", optionValue)
-            jsonObject.addProperty("presentation", optionValue)
-            val callResponse = ApiClient().findOrCreateBy("1", Constant.token, jsonObject)
+            jsonObject.addProperty("name", optionValue.name)
+            jsonObject.addProperty("presentation", optionValue.name) // name as presentation
+            val optionTypeId = optionValue.optionTypeId
+            val callResponse = ApiClient().findOrCreateByOptionValue(optionTypeId, Constant.token, jsonObject)
             callResponse.enqueue(object : Callback<OptionValue> {
                 override fun onFailure(call: Call<OptionValue>?, t: Throwable?) {
-                    var nextVariant = index + 1;
-                    if (nextVariant < options.size && ProductUtils.isStringNotEmpty(options.get(nextVariant))) {
-                        uploadProductVariant(options, nextVariant, product)
+                    var nextOptionValue = index + 1;
+                    if (nextOptionValue < options.size) {
+                        createOptionValue(options, nextOptionValue)
                     }
                 }
 
                 override fun onResponse(call: Call<OptionValue>?, response: Response<OptionValue>?) {
-                    createVariant(response?.body()?.id, product, options, index)
+                    var nextOptionValue = index + 1;
+                    if (nextOptionValue < options.size) {
+                        createOptionValue(options, nextOptionValue)
+                    } else {
+                        Utils.showToast(applicationContext, "Create all option value!")
+                        layoutOptionValue.visibility = View.GONE
+                    }
                 }
             })
         }
     }
 
-    // create variant by id return
-    fun createVariant(optionValueId: String?, product: ProductResponse, options: Array<String>, index: Int) {
+    fun getAllOptionValueThenCreateVariant(productResponse: ProductResponse, options: Array<String>) {
+        val callResponse = ApiClient().getAllOptionValues(Constant.token)
+        callResponse.enqueue(object : Callback<List<OptionValue>> {
+            override fun onFailure(call: Call<List<OptionValue>>?, t: Throwable?) {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+            }
+
+            override fun onResponse(call: Call<List<OptionValue>>?, response: Response<List<OptionValue>>?) {
+                val lstOptionValue = response?.body()
+                createVariant(lstOptionValue!!, productResponse, options, 0)
+            }
+
+        })
+    }
+
+    fun createVariant(lstOptionValueStore: List<OptionValue>, product: ProductResponse, options: Array<String>, index: Int) {
         val variantObject = JsonObject()
         variantObject.addProperty("price", product.price)
 
         // add option_value_ids array
         val jsonArray = JsonArray()
-        jsonArray.add(optionValueId)
+        val option = options.get(index)
+        try {
+            if (option?.contains("Size")!! && option?.contains("Color")!!) { // both size and color
+                val size = StringUtils.substringBetween(option, "Size", "Color").trim()
+                val sizeOptionValue = lstOptionValueStore.filter { value -> value.name.equals(size) }.single()
+                jsonArray.add(sizeOptionValue.id)
+                val color = option.substring(option.indexOf("Color")).replace("Color", "").trim()
+                val colorOptionValue = lstOptionValueStore.filter { value -> value.name.equals(color) }.single()
+                jsonArray.add(colorOptionValue.id)
+            } else if (option?.contains("Size")!! && !option?.contains("Color")!!) { // only size not color
+                val size = option.replace("Size", "").trim()
+                val sizeOptionValue = lstOptionValueStore.filter { value -> value.name.equals(size) }.single()
+                jsonArray.add(sizeOptionValue.id)
+            } else {  // only color not size
+                val color = option.replace("Color", "").trim()
+                val colorOptionValue = lstOptionValueStore.filter { value -> value.name.equals(color) }.single()
+                jsonArray.add(colorOptionValue.id)
+            }
+        } catch (e: Exception) {
+            // if the option is not in the right format, we skip this and go ahead to next option
+            var nextVariant = index + 1
+            createVariant(lstOptionValueStore, product, options, nextVariant)
+        }
         variantObject.add("option_value_ids", jsonArray)
 
         // add node json variant by using JsonElement
@@ -223,8 +322,8 @@ class MainActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call<Variant>?, response: Response<Variant>?) {
                 var nextVariant = index + 1;
-                if (nextVariant < options.size) {
-                    uploadProductVariant(options, nextVariant, product)
+                if (nextVariant < options.size && ProductUtils.isStringNotEmpty(options.get(nextVariant))) {
+                    createVariant(lstOptionValueStore, product, options, nextVariant)
                 } else { // if no variant left, keep upload next product
                     uploadNextProduct()
                 }
@@ -249,7 +348,7 @@ class MainActivity : AppCompatActivity() {
                         if (ProductUtils.isStringNotEmpty(lstProduct.get(currentProduct).options!!)) {
                             val optionsStr = lstProduct.get(currentProduct).options
                             val options = optionsStr!!.split("/").toTypedArray()
-                            uploadProductVariant(options, 0, product)
+                            getAllOptionValueThenCreateVariant(product, options)
                         } else {
                             uploadNextProduct()
                         }
@@ -271,7 +370,7 @@ class MainActivity : AppCompatActivity() {
                         if (ProductUtils.isStringNotEmpty(lstProduct.get(currentProduct).options!!)) {
                             val optionsStr = lstProduct.get(currentProduct).options
                             val options = optionsStr!!.split("/").toTypedArray()
-                            uploadProductVariant(options, 0, product)
+                            getAllOptionValueThenCreateVariant(product, options)
                         } else {
                             uploadNextProduct()
                         }
@@ -332,7 +431,7 @@ class MainActivity : AppCompatActivity() {
         // clear before read lines
         lstProduct.clear()
 
-        val inputStream = resources.openRawResource(R.raw.fitness_sportsmartwatch)
+        val inputStream = resources.openRawResource(R.raw.camping_hiking_shoes)
 
         val reader = BufferedReader(InputStreamReader(inputStream))
 

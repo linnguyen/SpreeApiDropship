@@ -42,11 +42,15 @@ class ApiClient {
         return apiInterface.getTaxons(token, true)
     }
 
-    fun findOrCreateBy(optionTypeId: String, token: String, jsonObject: JsonObject): Call<OptionValue> {
+    fun findOrCreateByOptionValue(optionTypeId: String, token: String, jsonObject: JsonObject): Call<OptionValue> {
         return apiInterface.findOrCreateOptionValue(optionTypeId, token, jsonObject)
     }
 
     fun createVariant(productId: String, token: String, jsonObject: JsonObject): Call<Variant> {
         return apiInterface.createVariant(productId, token, jsonObject)
+    }
+
+    fun getAllOptionValues(token: String) : Call<List<OptionValue>>{
+        return apiInterface.getAllOptionValues(token)
     }
 }

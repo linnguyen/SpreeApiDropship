@@ -69,6 +69,33 @@
             android:textColor="@android:color/black"
             android:textStyle="bold" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:id="@+id/layoutOptionValue"
+            android:visibility="gone"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvCreateOptionValueWarning"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Some option value weren't created on the server. Pls create before upload product"
+                android:textColor="@android:color/holo_red_dark"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnCreateOptionValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:text="Create OP" />
+
+        </LinearLayout>
+
+
     </LinearLayout>
 
     <GridLayout
@@ -111,8 +138,7 @@
         <TextView
             android:id="@+id/tvFileName"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            />
+            android:layout_height="wrap_content" />
 
     </GridLayout>
 </LinearLayout>

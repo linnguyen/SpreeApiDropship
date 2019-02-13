@@ -28,4 +28,7 @@ interface ApiInterface {
 
     @POST("v1/products/{product_id}/variants")
     fun createVariant(@Path(value = "product_id", encoded = true) productId: String, @Query("token") token: String, @Body jsonObject: JsonObject): Call<Variant>
+
+    @GET("v1/option_values")
+    fun getAllOptionValues(@Query("token") token: String): Call<List<OptionValue>>
 }
