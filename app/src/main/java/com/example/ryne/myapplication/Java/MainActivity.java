@@ -41,6 +41,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.opencsv.CSVReader;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -71,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btnReadCSV;
     private Button btnReport;
     private Button btnUploadImage;
+    private Button btnAli;
     private TextView tvUpload;
     private TextView tvFinish;
     private TextView tvNotice;
@@ -103,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
         btnCreate = findViewById(R.id.btnCreate);
         btnReadCSV = findViewById(R.id.btnRead);
         btnReport = findViewById(R.id.btnReport);
+        btnAli = findViewById(R.id.btnUploadProductEbay);
         tvUpload = findViewById(R.id.tvUpload);
         tvFinish = findViewById(R.id.tvFinish);
         tvNotice = findViewById(R.id.tvNotice);
@@ -165,6 +172,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        btnAli.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getAliDataFromUrl();
+            }
+        });
+
         // taxpons spinner
         taxonAdpater = new TaxonAdpater(getApplicationContext());
         spinner.setAdapter(taxonAdpater);
@@ -182,6 +196,34 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         getAllTaxons();
+    }
+
+    private void getAliDataFromUrl() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String url = "https://www.aliexpress.com/item/christmas-decorations-for-home-New-Year-Snowman-Christmas-Decoration/32833853986.html?spm=2114.search0104.3.1.66914894QwiKMD&ws_ab_test=searchweb0_0,searchweb201602_1_10065_10068_10547_319_10059_10884_317_10548_10887_10696_321_322_10084_453_10083_454_10103_10618_10307_537_536_10902,searchweb201603_45,ppcSwitch_0&algo_expid=aed5ef26-a985-47cf-9949-d2f6afa4778b-0&algo_pvid=aed5ef26-a985-47cf-9949-d2f6afa4778b&transAbTest=ae803_4";
+                //String url = "http://192.168.21.29:3000/test";
+                Document doc = null;
+                try {
+                    //doc = Jsoup.connect(url).get();
+                    doc = Jsoup.connect(url)
+                            .header("Accept-Encoding", "gzip, deflate")
+                            .userAgent("Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0")
+                            .maxBodySize(0)
+                            .timeout(600000)
+                            .get();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //Document doc = Jsoup.parse("UTF-8", url);
+                //Elements divs = doc.select("div.j-detail-page > div.detail-main-layout container util-clearfix > div.col-main > div.main-wrap");
+                Element description = doc.select("div.description-content").first();
+                Log.d("Description",  description.toString());
+                //description.html();
+
+            }
+        }).start();
     }
 
     private void uploadProduct(final Product product) {
