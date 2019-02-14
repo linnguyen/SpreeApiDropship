@@ -241,17 +241,17 @@ class MainActivity : AppCompatActivity() {
             jsonObject.addProperty("name", optionValue.name)
             jsonObject.addProperty("presentation", optionValue.name) // name as presentation
             val optionTypeId = optionValue.optionTypeId
-            val callResponse = ApiClient().findOrCreateByOptionValue(optionTypeId, Constant.token, jsonObject)
+            val callResponse = ApiClient().createOptionValue(optionTypeId, Constant.token, jsonObject)
             callResponse.enqueue(object : Callback<OptionValue> {
                 override fun onFailure(call: Call<OptionValue>?, t: Throwable?) {
-                    var nextOptionValue = index + 1;
+                    var nextOptionValue = index + 1
                     if (nextOptionValue < options.size) {
                         createOptionValue(options, nextOptionValue)
                     }
                 }
 
                 override fun onResponse(call: Call<OptionValue>?, response: Response<OptionValue>?) {
-                    var nextOptionValue = index + 1;
+                    var nextOptionValue = index + 1
                     if (nextOptionValue < options.size) {
                         createOptionValue(options, nextOptionValue)
                     } else {

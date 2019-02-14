@@ -46,11 +46,15 @@ class ApiClient {
         return apiInterface.findOrCreateOptionValue(optionTypeId, token, jsonObject)
     }
 
+    fun createOptionValue(optionTypeId: String, token: String, jsonObject: JsonObject): Call<OptionValue> {
+        return apiInterface.createOptionValue(optionTypeId, token, jsonObject)
+    }
+
     fun createVariant(productId: String, token: String, jsonObject: JsonObject): Call<Variant> {
         return apiInterface.createVariant(productId, token, jsonObject)
     }
 
-    fun getAllOptionValues(token: String) : Call<List<OptionValue>>{
+    fun getAllOptionValues(token: String): Call<List<OptionValue>> {
         return apiInterface.getAllOptionValues(token)
     }
 }

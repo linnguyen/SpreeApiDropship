@@ -26,6 +26,9 @@ interface ApiInterface {
     @POST("v1/option_types/{option_type_id}/find_or_create_option_value")
     fun findOrCreateOptionValue(@Path(value = "option_type_id", encoded = true) optionTypeId: String, @Query("token") token: String, @Body jsonObject: JsonObject): Call<OptionValue>
 
+    @POST("v1/option_types/{option_type_id}/option_values")
+    fun createOptionValue(@Path(value = "option_type_id", encoded = true) optionTypeId: String, @Query("token") token: String, @Body jsonObject: JsonObject): Call<OptionValue>
+
     @POST("v1/products/{product_id}/variants")
     fun createVariant(@Path(value = "product_id", encoded = true) productId: String, @Query("token") token: String, @Body jsonObject: JsonObject): Call<Variant>
 
