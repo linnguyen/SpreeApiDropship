@@ -175,7 +175,21 @@ public class MainActivity extends AppCompatActivity {
         btnAli.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                getAliDataFromUrl();
+                // getAliDataFromUrl();
+                JsonObject jsonObject = new JsonObject();
+                jsonObject.addProperty("url", "https://ae01.alicdn.com/kf/HTB1Ba0udjfguuRjSszcq6zb7FXaR/Newest-Couple-Queen-King-Crown-Fuax-Leather-Quartz-Analog-Wrist-Watch-Chronograph-2017-Wom.jpg_640x640.jpg");
+                Call<ImageResponse> call = apiInterface.uploadImagev3("2413", Constant.token, jsonObject);
+                call.enqueue(new Callback<ImageResponse>() {
+                    @Override
+                    public void onResponse(Call<ImageResponse> call, Response<ImageResponse> response) {
+                        Log.d("suckdkd", "ddk");
+                    }
+
+                    @Override
+                    public void onFailure(Call<ImageResponse> call, Throwable t) {
+                        Log.d("suckdkd", "ddk");
+                    }
+                });
             }
         });
 
@@ -202,26 +216,30 @@ public class MainActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                String url = "https://www.aliexpress.com/item/christmas-decorations-for-home-New-Year-Snowman-Christmas-Decoration/32833853986.html?spm=2114.search0104.3.1.66914894QwiKMD&ws_ab_test=searchweb0_0,searchweb201602_1_10065_10068_10547_319_10059_10884_317_10548_10887_10696_321_322_10084_453_10083_454_10103_10618_10307_537_536_10902,searchweb201603_45,ppcSwitch_0&algo_expid=aed5ef26-a985-47cf-9949-d2f6afa4778b-0&algo_pvid=aed5ef26-a985-47cf-9949-d2f6afa4778b&transAbTest=ae803_4";
-                //String url = "http://192.168.21.29:3000/test";
+                String url = "https://us.banggood.com/Wholesale-Warehouse-1-wp-Usa-1227976.html?akmClientCountry=VN&rmmds=DSdownloadcenter";
+                //String url = "https://www.aliexpress.com/item/Kliou-women-fitness-sporting-two-pieces-set-letter-print-turtleneck-top-leggings-striped-patchwork-2019-fashion/32959831810.html?spm=a2g01.11147086.layer-iabdzn.4.62a56140Eo5MZv&gps-id=5850028&scm=1007.16233.119941.0&scm_id=1007.16233.119941.0&scm-url=1007.16233.119941.0&pvid=481ffee5-c104-40cf-bbe3-288c0c3c1847";
                 Document doc = null;
                 try {
-                    //doc = Jsoup.connect(url).get();
-                    doc = Jsoup.connect(url)
-                            .header("Accept-Encoding", "gzip, deflate")
-                            .userAgent("Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0")
-                            .maxBodySize(0)
-                            .timeout(600000)
-                            .get();
+                    doc = Jsoup.connect(url).get();
+//                    doc = Jsoup.connect(url)
+//                            .header("Accept-Encoding", "gzip, deflate")
+//                            .userAgent("Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0")
+//                            .maxBodySize(0)
+//                            .timeout(600000)
+//                            .get();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
                 //Document doc = Jsoup.parse("UTF-8", url);
                 //Elements divs = doc.select("div.j-detail-page > div.detail-main-layout container util-clearfix > div.col-main > div.main-wrap");
-                Element description = doc.select("div.description-content").first();
-                Log.d("Description",  description.toString());
-                //description.html();
-
+                Elements tableRows = doc.select("div.pro_attr_box table tbody").select("tr");
+                Element rowTwo = tableRows.get(1); // get row 2
+                Elements imageLi = rowTwo.select("td").select("ul"); // list image
+                for (Element element : imageLi) {
+                    Element img = element.select("span img").first();
+                    String imageViewUrl = img.absUrl("viewimage");
+                    Log.d("View Image", imageViewUrl);
+                }
             }
         }).start();
     }

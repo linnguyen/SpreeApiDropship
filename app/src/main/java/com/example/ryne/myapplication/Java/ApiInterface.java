@@ -48,6 +48,9 @@ public interface ApiInterface {
     @POST("v1/products/{product_id}/image_upload")
     Call<ImageResponse> uploadImagev2(@Path(value = "product_id", encoded = true) String productId, @Query("token") String token, @Body JsonObject jsonObject);
 
+    @POST("v1/variants/{variant_id}/image_upload")
+    Call<ImageResponse> uploadImagev3(@Path("variant_id") String variantId, @Query("token") String token, @Body JsonObject jsonObject);
+
     @GET("v1/taxons")
     Call<TaxonResponse> getTaxons(@Query("token") String token, @Query("without_children") boolean value);
 }
