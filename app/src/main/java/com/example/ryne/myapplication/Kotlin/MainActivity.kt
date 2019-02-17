@@ -7,12 +7,14 @@ import android.content.CursorLoader
 import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
+import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import com.example.ryne.myapplication.Java.Constant
@@ -29,6 +31,8 @@ import com.google.gson.JsonObject
 import com.opencsv.CSVReader
 import kotlinx.android.synthetic.main.activity_main_jav.*
 import org.apache.commons.lang3.StringUtils
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -78,18 +82,18 @@ class MainActivity : AppCompatActivity() {
                 val callResponse = ApiClient().getAllOptionValues(Constant.token)
                 callResponse.enqueue(object : Callback<List<OptionValue>> {
                     override fun onFailure(call: Call<List<OptionValue>>?, t: Throwable?) {
-                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
                     }
 
                     override fun onResponse(call: Call<List<OptionValue>>?, response: Response<List<OptionValue>>?) {
-                        val lstOption = getAllOptionValuesForCurrentProducts()
+                        val lstOption = getAllOptionValuesFromProductCSV()
                         for (value: OptionValue in lstOption) {
                             if (!response!!.body().any { x -> x.name.equals(value.name) }) { // check if any option value not create on the server for the current option list
                                 layoutOptionValue.visibility = View.VISIBLE
                                 return
                             }
                         }
-                        // if ok then go ahead to create product
+                        // if all the option value create then go ahead to create product
                         currentProduct = 0
                         var product = lstProduct.get(0)
                         uploadProduct(product)
@@ -100,7 +104,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnCreateOptionValue.setOnClickListener {
-            val lstOption = getAllOptionValuesForCurrentProducts()
+            val lstOption = getAllOptionValuesFromProductCSV()
             createOptionValue(lstOption, 0)
         }
 
@@ -109,6 +113,22 @@ class MainActivity : AppCompatActivity() {
                     .setType("*/*")
                     .setAction(Intent.ACTION_GET_CONTENT)
             startActivityForResult(Intent.createChooser(intent, "Select a file"), 111)
+        }
+
+        btnUploadProductEbay.setOnClickListener {
+            val thread = Thread(Runnable {
+                // this only applies for Banggood product, it is to get variant image url
+                val url = "https://us.banggood.com/Wholesale-Warehouse-1-wp-Usa-1227976.html?akmClientCountry=VN&rmmds=DSdownloadcenter"
+                val doc = Jsoup.connect(url).get()
+                val tableRows = doc.select("div.pro_attr_box table tbody").select("tr")
+                val rowTwo = tableRows[1] // get row 2
+                val imageLi = rowTwo.select("td").select("ul") // list image
+                for (element in imageLi) {
+                    val img = element.select("span img").first()
+                    val imageViewUrl = img.absUrl("viewimage")
+                    Log.d("View Image", imageViewUrl)
+                }
+            }).start()
         }
 
         taxonAdapter = TaxonAdapter(applicationContext, R.layout.item_taxon, R.id.tv_taxon)
@@ -135,7 +155,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun getAllOptionValuesForCurrentProducts(): MutableList<OptionValue> {
+    fun getAllOptionValuesFromProductCSV(): MutableList<OptionValue> {
         var optionLst: MutableList<OptionValue> = mutableListOf()
         for (product: Product in lstProduct) {
             if (ProductUtils.isStringNotEmpty(product.options!!)) {
@@ -255,7 +275,7 @@ class MainActivity : AppCompatActivity() {
                     if (nextOptionValue < options.size) {
                         createOptionValue(options, nextOptionValue)
                     } else {
-                        Utils.showToast(applicationContext, "Create all option value!")
+                        Utils.showToast(applicationContext, "All option value were created!")
                         layoutOptionValue.visibility = View.GONE
                     }
                 }
@@ -263,7 +283,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun getAllOptionValueThenCreateVariant(productResponse: ProductResponse, options: Array<String>) {
+    fun getAllOptionValue(productResponse: ProductResponse, options: Array<String>) {
         val callResponse = ApiClient().getAllOptionValues(Constant.token)
         callResponse.enqueue(object : Callback<List<OptionValue>> {
             override fun onFailure(call: Call<List<OptionValue>>?, t: Throwable?) {
@@ -272,10 +292,56 @@ class MainActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call<List<OptionValue>>?, response: Response<List<OptionValue>>?) {
                 val lstOptionValue = response?.body()
-                createVariant(lstOptionValue!!, productResponse, options, 0)
+                scrapeVariantImageFromProductUrl(lstOptionValue!!, productResponse, options)
             }
 
         })
+    }
+
+    fun scrapeVariantImageFromProductUrl(lstOptionValue: List<OptionValue>, product: ProductResponse, options: Array<String>) {
+//        val thread = Thread(Runnable {
+//            // this only applies for Banggood product, it is to get variant image url
+//            val url = "https://us.banggood.com/Wholesale-Warehouse-1-wp-Usa-1227976.html?akmClientCountry=VN&rmmds=DSdownloadcenter"
+//            val doc = Jsoup.connect(url).get()
+//            val tableRows = doc.select("div.pro_attr_box table tbody").select("tr")
+//            val rowTwo = tableRows[1] // get row 2
+//            val imageLi = rowTwo.select("td").select("ul") // list image
+//            for (element in imageLi) {
+//                val img = element.select("span img").first()
+//                val imageViewUrl = img.absUrl("viewimage")
+//                Log.d("View Image", imageViewUrl)
+//            }
+//        }).start()
+
+        class someTask() : AsyncTask<Void, Void, MutableList<VariantImage>>() {
+            override fun doInBackground(vararg params: Void?): MutableList<VariantImage>? {
+                val lstVariantImage: MutableList<VariantImage> = mutableListOf()
+                // this only applies for Banggood product, it is to get variant image url
+                val url = "https://us.banggood.com/Wholesale-Warehouse-1-wp-Usa-1227976.html?akmClientCountry=VN&rmmds=DSdownloadcenter"
+                val doc = Jsoup.connect(url).get()
+                val tableRows = doc.select("div.pro_attr_box table tbody").select("tr")
+                val rowTwo = tableRows[1] // get row 2
+                val imageLi = rowTwo.select("td").select("ul") // list image
+                for (element in imageLi) {
+                    val img = element.select("span img").first()
+                    val imageViewUrl = img.absUrl("viewimage")
+                    Log.d("View Image", imageViewUrl)
+                    lstVariantImage.add(VariantImage("1", imageViewUrl))
+                }
+                return  lstVariantImage
+            }
+
+            override fun onPreExecute() {
+
+            }
+
+            override fun onPostExecute(result: MutableList<VariantImage>?) {
+//                createVariant()
+                createVariant(lstOptionValue, product, options, 0)
+            }
+        }
+
+
     }
 
     fun createVariant(lstOptionValueStore: List<OptionValue>, product: ProductResponse, options: Array<String>, index: Int) {
@@ -288,8 +354,10 @@ class MainActivity : AppCompatActivity() {
         try {
             if (option?.contains("Size")!! && option?.contains("Color")!!) { // both size and color
                 val size = StringUtils.substringBetween(option, "Size", "Color").trim()
+                // find the id of optionValue from list option value store
                 val sizeOptionValue = lstOptionValueStore.filter { value -> value.name.equals(size) }.single()
                 jsonArray.add(sizeOptionValue.id)
+                // find the id of optionValue from list option value store
                 val color = option.substring(option.indexOf("Color")).replace("Color", "").trim()
                 val colorOptionValue = lstOptionValueStore.filter { value -> value.name.equals(color) }.single()
                 jsonArray.add(colorOptionValue.id)
@@ -303,7 +371,8 @@ class MainActivity : AppCompatActivity() {
                 jsonArray.add(colorOptionValue.id)
             }
         } catch (e: Exception) {
-            // if the option is not in the right format, we skip this and go ahead to next option
+            // if the option is not in the right format, exption will occur, we skip this variant
+            // and go ahead to next option
             var nextVariant = index + 1
             createVariant(lstOptionValueStore, product, options, nextVariant)
         }
@@ -321,7 +390,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onResponse(call: Call<Variant>?, response: Response<Variant>?) {
-                var nextVariant = index + 1;
+                // create variant image here, image will get from url by scrape from url banggood
+
+
+                var nextVariant = index + 1
                 if (nextVariant < options.size && ProductUtils.isStringNotEmpty(options.get(nextVariant))) {
                     createVariant(lstOptionValueStore, product, options, nextVariant)
                 } else { // if no variant left, keep upload next product
@@ -348,7 +420,7 @@ class MainActivity : AppCompatActivity() {
                         if (ProductUtils.isStringNotEmpty(lstProduct.get(currentProduct).options!!)) {
                             val optionsStr = lstProduct.get(currentProduct).options
                             val options = optionsStr!!.split("/").toTypedArray()
-                            getAllOptionValueThenCreateVariant(product, options)
+                            getAllOptionValue(product, options)
                         } else {
                             uploadNextProduct()
                         }
@@ -370,7 +442,7 @@ class MainActivity : AppCompatActivity() {
                         if (ProductUtils.isStringNotEmpty(lstProduct.get(currentProduct).options!!)) {
                             val optionsStr = lstProduct.get(currentProduct).options
                             val options = optionsStr!!.split("/").toTypedArray()
-                            getAllOptionValueThenCreateVariant(product, options)
+                            getAllOptionValue(product, options)
                         } else {
                             uploadNextProduct()
                         }

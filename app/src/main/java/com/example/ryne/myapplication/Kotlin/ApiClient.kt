@@ -38,6 +38,10 @@ class ApiClient {
         return apiInterface.uploadImagev2(productId, token, jsonObject)
     }
 
+    fun uploadImageVariant(variantId: String, token: String, jsonObject: JsonObject): Call<ImageResponse> {
+        return apiInterface.uploadImagev3(variantId, token, jsonObject)
+    }
+
     fun getTaxons(token: String): Call<TaxonResponse> {
         return apiInterface.getTaxons(token, true)
     }

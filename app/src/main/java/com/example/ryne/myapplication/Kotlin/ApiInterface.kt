@@ -20,6 +20,9 @@ interface ApiInterface {
     @POST("v1/products/{product_id}/image_upload")
     fun uploadImagev2(@Path(value = "product_id", encoded = true) productId: String, @Query("token") token: String, @Body jsonObject: JsonObject): Call<ImageResponse>
 
+    @POST("v1/variants/{variant_id}/image_upload")
+    fun uploadImagev3(@Path(value = "variant_id", encoded = true) variantId: String, @Query("token") token: String, @Body jsonObject: JsonObject): Call<ImageResponse>
+
     @GET("v1/taxons")
     fun getTaxons(@Query("token") token: String, @Query("without_chidren") value: Boolean): Call<TaxonResponse>
 
